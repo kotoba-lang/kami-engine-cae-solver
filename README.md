@@ -88,7 +88,7 @@ kernels behind the same `cae.solver/solve` dispatch:
 | `:fem-elastoplastic` / `:finite-strain-elastic` | return-mapping plasticity and finite-strain Neo-Hookean reference response |
 | `:friction-contact` / `:friction-contact-3d` / `:fracture-criterion` | penalty contact, Coulomb friction cone and stress-intensity failure criterion |
 | `:fem-mesh` / `:mesh-quality` / `:adaptive-mesh` | TRI3/TET4 generation, area/volume quality and gradient-marked refinement |
-| `:mpi-domain` / `:mpi-halo-exchange` | deterministic partition, ghost indices and halo synchronization contract |
+| `:mpi-domain` / `:mpi-halo-exchange` / `:mpi-load-balance` | deterministic partition, ghost indices, halo synchronization and weighted rank balancing |
 | `:material-database` | temperature-dependent SS304, Al6061, water and air properties |
 | `:benchmark-suite` / `:benchmark-catalog` / `:validation-report` | analytic Poiseuille/bar/wall checks, Sod/Taylor/cantilever metadata, RMSE and aggregate regression gate |
 
