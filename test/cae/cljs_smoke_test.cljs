@@ -6,6 +6,14 @@
   (:require [cae.assessment :as assessment]
             [cae.industrial]
             [cae.interchange :as interchange]
+            [cae.high-fidelity]
+            [cae.adapter]
+            [cae.protocol :as protocol]
+            [cae.case-writer :as writer]
+            [cae.result-reader :as reader]
+            [cae.dataset :as dataset]
+            [cae.host :as host]
+            [cae.verification]
             [cae.orchestration :as orchestration]
             [cae.solver :as solver]
             [cae.study :as study]))
@@ -46,6 +54,25 @@
         assessment (assessment/assess cfd {:pressure-drop-Pa {:max 200.0}})
         batch (orchestration/run-cases [with-provenance {:solver {:kind :cfd}
                                                           :flow-m3-s 0.0 :duct-diameter-m 0.4 :duct-length-m 10.0}])
+        fvm (solver/solve {:solver {:kind :fvm-compressible} :cells 8 :dx-m 0.01 :dt-s 1.0e-5 :steps 1 :initial-condition :sod-shock-tube})
+        rans (solver/solve {:solver {:kind :rans-k-epsilon} :cells 4 :dx-m 1.0 :dt-s 0.01 :steps 1 :velocity-m-s 2.0 :density-kg-m3 1.0 :viscosity-pa-s 1.0e-3})
+        matdb (solver/solve {:solver {:kind :material-database} :material :air :temperature-K 300.0})
+        benchmark (solver/solve {:solver {:kind :benchmark-suite} :case :axial-bar :force-N 10.0 :youngs-modulus-Pa 1000.0 :area-m2 2.0 :length-m 4.0})
+        external (solver/solve {:solver {:kind :external-backend} :backend :openfoam :domain :cfd :version "v11" :input-format :openfoam-case})
+        validation (solver/solve {:solver {:kind :validation-report} :report-id "cljs-nightly" :checks [benchmark {:passed? true}]})
+        balance (solver/solve {:solver {:kind :mpi-load-balance} :weights [1.0 1.0 8.0 1.0 1.0] :ranks 2})
+        experiment (solver/solve {:solver {:kind :experimental-comparison} :dataset :wind-tunnel :predicted [1.0 2.0] :measured [1.0 2.0] :tolerance 1.0e-6})
+        mpi-message (protocol/mpi-message {:source 0 :target 1 :tag :halo :payload [1 2]})
+        job (protocol/validate-job (protocol/job-spec {:executable "kotoba-worker" :arguments ["--case" "x"] :ranks 2 :threads 4}))
+        of-case (writer/openfoam-case {:control {:application "simpleFoam"} :transport {:kinematic-viscosity 1e-5}})
+        ccx (writer/calculix-input {:nodes [[1 0 0 0] [2 1 0 0] [3 0 1 0] [4 0 0 1]] :elements [[1 "C3D4" 1 2 3 4]] :fixed-nodes [1] :loads [[2 1 10]]})
+        field (reader/openfoam-field {:name "p" :text "internalField nonuniform List<scalar> 2 (101325 101300)"})
+        table (reader/calculix-table {:name "U" :columns [:node :ux] :text "1 0.1\n2 0.2"})
+        ds (dataset/verify-manifest (dataset/manifest {:id "fsi" :revision "abc" :license :mit :domain :fsi :files ["mesh.h5"]}))
+        vtk (reader/vtk-legacy {:text "# vtk DataFile Version 3.0\nASCII\nDATASET POLYDATA\nPOINTS 2 float\n0 0 0 1 0 0\nPOINT_DATA 2\nSCALARS p float\nLOOKUP_TABLE default\n1 2"})
+        host-job (host/run-job (host/component-job {:source "solver.kotoba" :artifact "solver.wasm" :export "main"
+                                                    :package-lock "lock.edn" :policy "policy.edn"
+                                                    :requested-imports [:log-read] :grants [:log-read]}))
         sensitivity (study/central-sensitivity {:solver {:kind :cfd}
                                                  :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
                                                 [:flow-m3-s] :pressure-drop-Pa 0.05)]
@@ -61,6 +88,23 @@
     (check! (= :passed (:status assessment)) "assessment did not pass" {:assessment assessment})
     (check! (= [:succeeded :failed] (mapv :status batch)) "batch isolation invalid" {:batch batch})
     (check! (pos? (:derivative sensitivity)) "CFD sensitivity direction invalid" {:sensitivity sensitivity})
+    (check! (= 8 (:cells fvm)) "FVM Sod dispatch invalid" {:result fvm})
+    (check! (= 4 (:cells rans)) "RANS dispatch invalid" {:result rans})
+    (check! (pos? (get-in matdb [:properties :dynamic-viscosity-Pa-s])) "fluid material invalid" {:result matdb})
+    (check! (:passed? benchmark) "benchmark verification invalid" {:result benchmark})
+    (check! (= :adapter-pending (:status external)) "external adapter contract invalid" {:result external})
+    (check! (= :verified (:status validation)) "validation report gate invalid" {:result validation})
+    (check! (= 5 (count (:assignment balance))) "MPI load balance invalid" {:result balance})
+    (check! (= :verified (:status experiment)) "experimental comparison invalid" {:result experiment})
+    (check! (= :halo (:tag mpi-message)) "MPI protocol invalid" {:result mpi-message})
+    (check! (= ["mpirun" "-np" "2" "kotoba-worker" "--case" "x"] (protocol/launch-vector job)) "job argv invalid" {:result job})
+    (check! (contains? of-case "system/controlDict") "OpenFOAM writer invalid" {:result of-case})
+    (check! (and (.includes ccx "*NODE") (.includes ccx "*ELEMENT")) "CalculiX writer invalid" {:result ccx})
+    (check! (= 3 (count (:values field))) "OpenFOAM reader invalid" {:result field})
+    (check! (= 2 (count (:rows table))) "CalculiX reader invalid" {:result table})
+    (check! (= :metadata-verified (:status ds)) "dataset manifest invalid" {:result ds})
+    (check! (= 2 (:point-count vtk)) "VTK reader invalid" {:result vtk})
+    (check! (= :kototama-pending (:status host-job)) "Kotoba/kototama host contract invalid" {:result host-job})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
             "OpenUSD provenance invalid" {:case with-provenance})
     (println "CLJS/NBB CAE smoke test passed")))

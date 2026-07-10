@@ -75,6 +75,35 @@ It executes CFD (fittings + combustion), FEM beam, Arrhenius materials,
 induction heating, production energy, OpenUSD provenance, assessment, batch
 failure isolation, and sensitivity analysis in the Node/CLJS runtime.
 
+## High-fidelity reference contracts
+
+`cae.high-fidelity` and `cae.verification` expose portable numerical reference
+kernels behind the same `cae.solver/solve` dispatch:
+
+| kind | Contract |
+| --- | --- |
+| `:fvm-compressible` | 1D conservative Euler finite-volume update with Rusanov flux; `:sod-shock-tube` initial condition and density/pressure profiles |
+| `:rans-k-epsilon` | 1D k–epsilon transport reference with diffusion, production, dissipation and standard constants |
+| `:combustion-reaction` / `:boundary-layer` | Arrhenius reaction and laminar/turbulent boundary-layer correlations |
+| `:fem-elastoplastic` / `:finite-strain-elastic` | return-mapping plasticity and finite-strain Neo-Hookean reference response |
+| `:friction-contact` / `:friction-contact-3d` / `:fracture-criterion` | penalty contact, Coulomb friction cone and stress-intensity failure criterion |
+| `:fem-mesh` / `:mesh-quality` / `:adaptive-mesh` | TRI3/TET4 generation, area/volume quality and gradient-marked refinement |
+| `:mpi-domain` / `:mpi-halo-exchange` / `:mpi-load-balance` | deterministic partition, ghost indices, halo synchronization and weighted rank balancing |
+| `:material-database` | temperature-dependent SS304, Al6061, water and air properties |
+| `:benchmark-suite` / `:benchmark-catalog` / `:experimental-comparison` / `:validation-report` | analytic Poiseuille/bar/wall checks, Sod/Taylor/cantilever metadata, experimental RMSE/bias and aggregate regression gate |
+
+These kernels are deliberately labelled `:fidelity :*-reference` and
+`:status :screening-only`. They define a deterministic CLJ/CLJS boundary for
+swapping in validated CFD/FEM/MPI implementations; they do not claim commercial
+solver verification or manufacturing release authority.
+
+For a host-native validated solver, use `cae.adapter` with
+`:solver {:kind :external-backend}`. The descriptor records backend, version,
+domain, input format, command/MPI transport and result provenance, while this
+portable library remains process-neutral. A missing host result is reported as
+`:adapter-pending`; a returned result is marked `:completed` without silently
+promoting its fidelity.
+
 ## GitHub Pages WebGPU view
 
 The Pages report adds a live Kami Engine surface above the CAE metrics. Its
