@@ -86,6 +86,12 @@
   (let [n (double normal-force-N) t (double tangential-force-N) mu (double friction-coefficient) k (double penalty-stiffness-N-m) limit (* mu (Math/abs n)) slip? (> (Math/abs t) limit) traction (if slip? (* limit (if (neg? t) -1.0 1.0)) t)]
     {:solver :friction-contact :normal-force-N n :tangential-traction-N traction :friction-limit-N limit :sliding? slip? :penetration-m (/ (Math/abs n) k) :fidelity :contact-reference :status :screening-only}))
 
+(defmethod solver/solve :friction-contact-3d [{:keys [normal-vector-N tangential-vector-N friction-coefficient penalty-stiffness-N-m]}]
+  (let [[nx ny nz] (mapv double normal-vector-N) [tx ty tz] (mapv double tangential-vector-N) mu (double friction-coefficient) k (double penalty-stiffness-N-m)
+        nmag (Math/sqrt (+ (* nx nx) (* ny ny) (* nz nz))) tmag (Math/sqrt (+ (* tx tx) (* ty ty) (* tz tz))) limit (* mu nmag) sliding? (> tmag limit) scale (if (and sliding? (pos? tmag)) (/ limit tmag) 1.0) traction [(* tx scale) (* ty scale) (* tz scale)]
+        direction (if (pos? tmag) [(/ tx tmag) (/ ty tmag) (/ tz tmag)] [0.0 0.0 0.0])]
+    {:solver :friction-contact-3d :normal-force-N nmag :tangential-force-N tmag :friction-limit-N limit :tangential-traction-vector-N traction :sliding? sliding? :sliding-direction direction :penetration-m (/ nmag k) :fidelity :contact-reference :status :screening-only}))
+
 (defmethod solver/solve :fracture-criterion [{:keys [stress-Pa fracture-toughness-Pa-m stress-intensity-factor-Pa-sqrt-m]}]
   (let [s (double stress-Pa) k (double stress-intensity-factor-Pa-sqrt-m) kc (double fracture-toughness-Pa-m) ratio (/ k kc)]
     {:solver :fracture-criterion :stress-Pa s :stress-intensity-factor-Pa-sqrt-m k :utilization ratio :fractured? (>= ratio 1.0) :criterion :linear-elastic-fracture :fidelity :fracture-reference :status :screening-only}))
