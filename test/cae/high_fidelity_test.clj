@@ -23,3 +23,10 @@
         b (s/solve {:solver {:kind :benchmark-suite} :case :poiseuille})]
     (is (> (get-in m [:properties :youngs-modulus-Pa]) 1e11))
     (is (:passed? b))))
+
+(deftest experimental-and-aggregate-gates
+  (let [x (s/solve {:solver {:kind :experimental-comparison} :dataset :wind-tunnel :predicted [1.0 2.0] :measured [1.0 2.0] :tolerance 1e-6})
+        r (s/solve {:solver {:kind :validation-report} :report-id "jvm" :checks [x {:passed? true}]})]
+    (is (= :verified (:status x)))
+    (is (= :verified (:status r)))
+    (is (= 2 (:total r)))))
