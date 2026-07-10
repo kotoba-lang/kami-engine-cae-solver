@@ -10,6 +10,7 @@
             [cae.adapter]
             [cae.protocol :as protocol]
             [cae.case-writer :as writer]
+            [cae.result-reader :as reader]
             [cae.verification]
             [cae.orchestration :as orchestration]
             [cae.solver :as solver]
@@ -63,6 +64,8 @@
         job (protocol/validate-job (protocol/job-spec {:executable "kotoba-worker" :arguments ["--case" "x"] :ranks 2 :threads 4}))
         of-case (writer/openfoam-case {:control {:application "simpleFoam"} :transport {:kinematic-viscosity 1e-5}})
         ccx (writer/calculix-input {:nodes [[1 0 0 0] [2 1 0 0] [3 0 1 0] [4 0 0 1]] :elements [[1 "C3D4" 1 2 3 4]] :fixed-nodes [1] :loads [[2 1 10]]})
+        field (reader/openfoam-field {:name "p" :text "internalField nonuniform List<scalar> 2 (101325 101300)"})
+        table (reader/calculix-table {:name "U" :columns [:node :ux] :text "1 0.1\n2 0.2"})
         sensitivity (study/central-sensitivity {:solver {:kind :cfd}
                                                  :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
                                                 [:flow-m3-s] :pressure-drop-Pa 0.05)]
@@ -90,6 +93,8 @@
     (check! (= ["mpirun" "-np" "2" "kotoba-worker" "--case" "x"] (protocol/launch-vector job)) "job argv invalid" {:result job})
     (check! (contains? of-case "system/controlDict") "OpenFOAM writer invalid" {:result of-case})
     (check! (and (.includes ccx "*NODE") (.includes ccx "*ELEMENT")) "CalculiX writer invalid" {:result ccx})
+    (check! (= 3 (count (:values field))) "OpenFOAM reader invalid" {:result field})
+    (check! (= 2 (count (:rows table))) "CalculiX reader invalid" {:result table})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
             "OpenUSD provenance invalid" {:case with-provenance})
     (println "CLJS/NBB CAE smoke test passed")))
