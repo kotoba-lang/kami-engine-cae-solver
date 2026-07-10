@@ -26,6 +26,15 @@ jobs:
         run: npx --yes nbb -cp src:test -e "(require '[cae.cljs-smoke-test])"
       - name: Generate Pages report from CLJS solver runtime
         run: npx --yes nbb -cp src:scripts -e "(require '[build-pages-report])"
+      - name: Add Kami Engine browser runtime assets
+        run: |
+          curl --fail --location --retry 3 --output dist/kami-clj-demo.wasm \
+            https://raw.githubusercontent.com/kotoba-lang/kami-engine/aaec8e8c0feacd6da5a9e4874b9292e93fdd68ec/kami-web/clj-demo.wasm
+          curl --fail --location --retry 3 --output dist/kami-ui.js \
+            https://raw.githubusercontent.com/kotoba-lang/kami-engine/aaec8e8c0feacd6da5a9e4874b9292e93fdd68ec/kami-ui-sdk/kami-ui.js
+          cp scripts/kami_cae_webgpu.js dist/kami-cae-webgpu.js
+      - name: Verify Kami Engine WASM host contract
+        run: node scripts/verify_kami_wasm.mjs dist/kami-clj-demo.wasm scripts/kami_cae_webgpu.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
