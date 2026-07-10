@@ -64,3 +64,7 @@
   (when-not (get benchmark-catalog benchmark) (throw (ex-info "unknown benchmark catalog entry" {:benchmark benchmark :available (keys benchmark-catalog)})))
   (let [computed (vec computed) reference (vec reference) tol (double (or tolerance 1e-6)) errors (mapv (fn [a b] (Math/abs (- (double a) (double b)))) computed reference) rmse (Math/sqrt (/ (reduce + (map #(* % %) errors)) (max 1 (count errors)))) max-error (apply max 0.0 errors)]
     {:solver :benchmark-catalog :benchmark benchmark :metadata (get benchmark-catalog benchmark) :rmse rmse :max-error max-error :samples (count errors) :tolerance tol :passed? (<= max-error tol) :status (if (<= max-error tol) :verified :failed) :fidelity :public-benchmark-reference}))
+
+(defmethod solver/solve :validation-report [{:keys [checks report-id]}]
+  (let [checks (vec checks) passed (count (filter :passed? checks)) failed (- (count checks) passed)]
+    {:solver :validation-report :report-id report-id :checks checks :total (count checks) :passed passed :failed failed :passed? (and (pos? (count checks)) (zero? failed)) :status (if (and (pos? (count checks)) (zero? failed)) :verified :failed) :fidelity :verification-gate}))
