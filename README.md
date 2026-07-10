@@ -97,6 +97,13 @@ These kernels are deliberately labelled `:fidelity :*-reference` and
 swapping in validated CFD/FEM/MPI implementations; they do not claim commercial
 solver verification or manufacturing release authority.
 
+For a host-native validated solver, use `cae.adapter` with
+`:solver {:kind :external-backend}`. The descriptor records backend, version,
+domain, input format, command/MPI transport and result provenance, while this
+portable library remains process-neutral. A missing host result is reported as
+`:adapter-pending`; a returned result is marked `:completed` without silently
+promoting its fidelity.
+
 ## GitHub Pages WebGPU view
 
 The Pages report adds a live Kami Engine surface above the CAE metrics. Its
