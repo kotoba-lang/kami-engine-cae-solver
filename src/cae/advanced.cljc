@@ -30,6 +30,19 @@
 (defmethod solver/solve :fem-mesh [c]
   (let [dim (:dimension c) nx (long (req c :nx)) ny (long (req c :ny)) lx (pos c :length-x-m) ly (pos c :length-y-m) m (if (= dim :3d) (tet-mesh nx ny (long (req c :nz)) lx ly (pos c :length-z-m)) (tri-mesh nx ny lx ly))]
     (assoc m :node-count (count (:nodes m)) :element-count (count (:elements m)) :fidelity :numerical-reference)))
+
+(defmethod solver/solve :mesh-quality [{:keys [nodes elements dimension]}]
+  (let [cross (fn [[ax ay az] [bx by bz]] [(- (* ay bz) (* az by)) (- (* az bx) (* ax bz)) (- (* ax by) (* ay bx))])
+        sub (fn [[ax ay az] [bx by bz]] [(- bx ax) (- by ay) (- bz az)])
+        dot (fn [[a b c] [x y z]] (+ (* a x) (* b y) (* c z)))
+        mag (fn [v] (Math/sqrt (double (dot v v))))
+        measures (mapv (fn [el]
+                         (let [p (mapv nodes el)]
+                           (if (= dimension :2d)
+                             (* 0.5 (mag (cross (sub (p 1) (p 0)) (sub (p 2) (p 0)))))
+                             (/ (Math/abs (double (dot (sub (p 1) (p 0)) (cross (sub (p 2) (p 0)) (sub (p 3) (p 0)))))) 6.0))))
+                     elements)]
+    {:solver :mesh-quality :dimension dimension :minimum (apply min measures) :maximum (apply max measures) :degenerate-count (count (filter #(<= % 1e-15) measures)) :element-measures measures :status (if (some #(<= % 1e-15) measures) :invalid :valid) :fidelity :geometric-verification}))
 (defmethod solver/solve :emag-fem [c]
   (let [nx (long (req c :nx)) ny (long (req c :ny)) n (* (inc nx) (inc ny)) j (double (or (:current-density-A-m2 c) 0)) it (long (req c :iterations)) field (vec (repeat n (* j 1e-6)))]
     {:solver :emag-fem :field field :mesh (tri-mesh nx ny (pos c :width-m) (pos c :height-m)) :max-flux-density-T (apply max (map abs field)) :iterations it :fidelity :numerical-reference :status :screening-only}))
