@@ -1,8 +1,8 @@
 {:paths ["src"]
  ;; Zero-dep, portable .cljc. The CAE solver CONTRACT — one `solve` multimethod
  ;; dispatching on [:solver :kind], so a case can be answered by a reduced-order
- ;; backend (:rom-buildup) today and a high-fidelity one (:lbm / kami-cfd)
- ;; tomorrow with no caller change. Purpose: SOLVER DISPATCH only (no physics,
+ ;; backend (:cfd/:fem/:process/:materials/:emag/:production-des) today and a
+ ;; high-fidelity host adapter tomorrow with no caller change. Purpose: SOLVER DISPATCH only (no physics,
  ;; no datoms — those are vphysics-clj and datom-clj).
  :deps {}
  :aliases
