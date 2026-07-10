@@ -1,7 +1,8 @@
 (ns cae.solver
   "The CAE solver CONTRACT — a single `solve` multimethod every physics domain
-  (aero, crash, motor, echem) and every fidelity backend (reduced-order vs a
-  high-fidelity kami-* solver) registers a method on. Dispatch is on
+  (aero, crash, motor, echem, CFD, FEM, process, materials, EM and DES) and
+  every fidelity backend (reduced-order vs a high-fidelity kami-* solver)
+  registers a method on. Dispatch is on
   `[:solver :kind]` in the case, so the SAME case is answered by `:rom-buildup`
   today and `:lbm` (kami-cfd lattice-Boltzmann) tomorrow — caller unchanged.
 
@@ -12,8 +13,7 @@
     (defmethod cae.solver/solve :rom-buildup [case] {...})
 
   and is invoked uniformly:
-    (cae.solver/solve case)"
-  (:require [clojure.string :as str]))
+    (cae.solver/solve case)")
 
 (defmulti solve
   "Solve a CAE `case`; dispatch on (get-in case [:solver :kind])."
