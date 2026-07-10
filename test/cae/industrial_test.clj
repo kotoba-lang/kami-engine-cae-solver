@@ -179,10 +179,10 @@
          (failure #(cae/solve {:solver {:kind :emag} :line-voltage-V 400 :current-A 500
                                :power-factor 0.9 :speed-rpm 3000 :efficiency 0.999
                                :stator-resistance-ohm 1.0}))))
-    (is (= :induction-heating
-           (:mode (failure #(cae/solve {:solver {:kind :emag} :mode :induction-heating
-                                         :heating-power-W 1000 :thermal-mass-kg 1
-                                         :specific-heat-J-kgK 500 :duration-s 10})))))
+    (is (= :coupling-efficiency
+           (:field (failure #(cae/solve {:solver {:kind :emag} :mode :induction-heating
+                                          :heating-power-W 1000 :thermal-mass-kg 1
+                                          :specific-heat-J-kgK 500 :duration-s 10})))))
     (is (:stations
          (failure #(cae/solve {:solver {:kind :production-des} :jobs 1
                                :stations [{:id :same :cycle-time-s 1}
