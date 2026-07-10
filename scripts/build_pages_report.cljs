@@ -53,16 +53,20 @@
         html (str "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
                   "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
                   "<title>Kotoba CAE — CLJS verification</title>"
-                  "<style>body{font-family:system-ui,sans-serif;max-width:960px;margin:3rem auto;padding:0 1rem;color:#172033}"
+                  "<style>body{font-family:system-ui,sans-serif;max-width:1040px;margin:3rem auto;padding:0 1rem;color:#172033}"
                   "h1{margin-bottom:.2rem} .ok{color:#087443;font-weight:700} table{border-collapse:collapse;width:100%;margin:1.5rem 0}"
                   "th,td{padding:.7rem;border-bottom:1px solid #d8dee9;text-align:left}th{background:#f4f7fb}"
-                  "pre{overflow:auto;background:#111827;color:#d1fae5;padding:1rem;border-radius:.5rem}</style></head><body>"
+                  "pre{overflow:auto;background:#111827;color:#d1fae5;padding:1rem;border-radius:.5rem}"
+                  ".kami-stage{position:relative;margin:1.5rem 0;border-radius:20px;overflow:hidden;box-shadow:0 16px 36px #17203333}"
+                  "#kami-webgpu-canvas{display:block;width:100%;height:310px;background:#050d18}.kami-stage-copy{position:absolute;right:18px;top:18px;color:#eafff6;background:#061220cc;padding:12px 14px;border-radius:12px;font-weight:700;min-width:210px}"
+                  "#kami-runtime-status[data-state=ok]{color:#7af4ba}#kami-runtime-status[data-state=error]{color:#ff8f8f}#kami-runtime-status[data-state=fallback]{color:#ffd36e}</style></head><body>"
                   "<h1>Kotoba CAE</h1><p class=\"ok\">● CLJS/NBB verification passed</p>"
                   "<p>This report is generated in GitHub Actions by executing the portable ClojureScript solver surface. "
                   "Results are reduced-order screening outputs, not release-signoff CAE.</p>"
+                  "<section class=\"kami-stage\"><canvas id=\"kami-webgpu-canvas\" aria-label=\"Kami Engine WebGPU renderer\"></canvas><div class=\"kami-stage-copy\"><div id=\"kami-runtime-status\">Loading Kami Engine WASM…</div><hr><div>WASM ticks: <span id=\"kami-wasm-ticks\">0</span></div><div>WASM draw calls: <span id=\"kami-wasm-draws\">0</span></div></div></section>"
                   "<table><thead><tr><th>Domain</th><th>Metric</th><th>Value</th><th>Unit</th></tr></thead><tbody>"
                   (apply str (map metric-row rows)) "</tbody></table><h2>Runtime evidence</h2><pre>"
-                  (html-escape json) "</pre></body></html>")]
+                  (html-escape json) "</pre><script>window.__KAMI_CAE_METRICS__=" json ";</script><script src=\"./kami-ui.js\"></script><script src=\"./kami-cae-webgpu.js\"></script></body></html>")]
     (.mkdirSync fs "dist" #js {:recursive true})
     (.writeFileSync fs "dist/index.html" html "utf8")
     (println "Generated dist/index.html from CLJS solver runtime")))
