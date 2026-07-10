@@ -5,7 +5,13 @@
   const ticks = document.getElementById("kami-wasm-ticks");
   const draws = document.getElementById("kami-wasm-draws");
   const sceneName = document.getElementById("kami-scene-name");
-  const sceneLabels = ["CFD · flow / combustion", "FEM · cantilever beam", "Process · weld / cast / roll", "Materials · microstructure", "EM · motor / induction", "Production · flow line"];
+  const sceneLabels = [
+    "CFD · flow / combustion", "FEM · cantilever beam", "Process · weld / cast / roll",
+    "Materials · microstructure", "EM · motor / induction", "Production · flow line",
+    "FVM · Sod shock tube", "RANS · k–ε turbulence", "AMR · adaptive mesh",
+    "Thermo-mechanical · coupled bar", "EM FEM · field mesh", "Contact · 3D friction",
+    "Fracture · crack criterion", "MPI · partitions / halo", "FEM mesh · TRI3 / TET4 quality"
+  ];
   let scene = 0;
   document.querySelectorAll("[data-kami-scene]").forEach((button) => button.addEventListener("click", () => {
     scene = Number(button.dataset.kamiScene);
@@ -72,6 +78,13 @@
     const faces = [[x0,y0,z1,x1,y0,z1,x1,y1,z1,x0,y1,z1],[x1,y0,z0,x0,y0,z0,x0,y1,z0,x1,y1,z0],[x0,y1,z1,x1,y1,z1,x1,y1,z0,x0,y1,z0],[x0,y0,z0,x1,y0,z0,x1,y0,z1,x0,y0,z1],[x1,y0,z1,x1,y0,z0,x1,y1,z0,x1,y1,z1],[x0,y0,z0,x0,y0,z1,x0,y1,z1,x0,y1,z0]];
     for (const q of faces) { const ix = [0,1,2,0,2,3]; for (const i of ix) out.push(q[i*3], q[i*3+1], q[i*3+2], c[0], c[1], c[2]); }
   };
+  const tri = (out, a, b, c, color) => {
+    for (const p of [a,b,c,c,b,a]) out.push(p[0],p[1],p[2],color[0],color[1],color[2]);
+  };
+  const tetra = (out, x, y, z, size, c) => {
+    const a=[x,y+size,z], b=[x-size,y-size,z+size], d=[x+size,y-size,z+size], e=[x,y-size,z-size];
+    tri(out,a,b,d,c); tri(out,a,d,e,c); tri(out,a,e,b,c); tri(out,b,e,d,c);
+  };
   const sceneGeometry = (kind) => {
     const v = [];
     if (kind === 0) { cube(v, 0, 0, 0, 5.8, 1.5, 1.5, color.blue); for (let i=0;i<6;i++) cube(v, -2.3 + i*.9, .1, 0, .25, .25, .25, color.cyan); cube(v, -3.5, 0, 0, .3, 2.6, 2.6, color.white); }
@@ -80,6 +93,15 @@
     if (kind === 3) { for (let x=0;x<4;x++) for (let y=0;y<3;y++) for (let z=0;z<3;z++) cube(v, (x-1.5)*.65, (y-1)*.65, (z-1)*.65, .3, .3, .3, [0.2+x*.12,0.35+y*.15,0.8+z*.05]); }
     if (kind === 4) { cube(v, 0, 0, 0, 1.3, 2.3, 1.3, color.purple); for (let i=0;i<12;i++) { const a=i*Math.PI/6; cube(v, Math.cos(a)*1.5, 0, Math.sin(a)*1.5, .25, 1.0, .25, color.cyan); } cube(v, 0, 0, 0, 3.8, .12, .12, color.gold); }
     if (kind === 5) { for (let i=0;i<4;i++) { cube(v, -2.4+i*1.6, -.5, 0, 1.0, 1.2, 1.3, [0.1+i*.12, .45, .8-i*.08]); cube(v, -2.4+i*1.6, .35, 0, .35, .35, .35, color.gold); } cube(v, 0, -1.2, 0, 6.0, .12, 1.5, color.white); }
+    if (kind === 6) { for (let i=0;i<18;i++) { const left=i<9, h=left?1.8:.55, c=left?color.blue:color.orange; cube(v,-3.4+i*.4,-1+h/2,0,.34,h,1.4,c); } cube(v,.15,.25,0,.12,2.7,1.7,color.gold); }
+    if (kind === 7) { cube(v,0,-1.35,0,7,.15,3,color.white); cube(v,0,1.35,0,7,.15,3,color.white); for(let i=0;i<18;i++){const a=i*.72, r=.45+i*.04; cube(v,-3+i*.35,Math.sin(a)*r,Math.cos(a)*r,.18,.18,.18,i%2?color.cyan:color.purple);} }
+    if (kind === 8) { for(let x=0;x<4;x++) for(let z=0;z<3;z++) cube(v,-2.7+x*.7,-.65,z*.7-0.7,.58,.58,.58,color.blue); for(let x=0;x<8;x++) for(let z=0;z<5;z++) cube(v,.1+x*.38,-.65,z*.38-.76,.28,.28,.28,x<3?color.gold:color.cyan); tetra(v,0,.65,0,.55,color.orange); }
+    if (kind === 9) { for(let i=0;i<15;i++){const x=-3.2+i*.46, heat=1-Math.abs(i-7)/7, y=.28*Math.sin(i/14*Math.PI); cube(v,x,y,0,.42,.5,.8,[.08+heat*.92,.72-heat*.42,.78-heat*.66]);} cube(v,-3.65,0,0,.35,2.4,1.5,color.white); }
+    if (kind === 10) { for(let x=0;x<7;x++) for(let z=0;z<7;z++) tetra(v,(x-3)*.55,-.9,(z-3)*.55,.18,[.1+x*.08,.25+z*.07,.85]); for(let i=0;i<16;i++){const a=i*Math.PI/8; cube(v,Math.cos(a)*1.45,.55,Math.sin(a)*1.45,.18,.65,.18,color.gold);} cube(v,0,.55,0,.55,1.4,.55,color.purple); }
+    if (kind === 11) { cube(v,-.35,-.85,0,4.8,1.1,2.3,color.blue); cube(v,.35,.45,0,4.8,1.1,2.3,color.orange); for(let i=0;i<7;i++) cube(v,-1.6+i*.55,-.18,0,.18,.18,1.7,color.gold); cube(v,2.9,.45,0,1.3,.16,.16,color.cyan); }
+    if (kind === 12) { cube(v,-1.75,0,0,3.1,2.8,.7,color.blue); cube(v,1.75,0,0,3.1,2.8,.7,color.blue); cube(v,0,1.05,0,.18,.7,.82,color.orange); tetra(v,0,.55,0,.45,color.gold); cube(v,0,-1.05,0,.18,.7,.82,color.orange); }
+    if (kind === 13) { const cs=[color.blue,color.cyan,color.purple,color.orange]; for(let r=0;r<4;r++){cube(v,-2.7+r*1.8,0,0,1.45,1.7,2.2,cs[r]); if(r<3){cube(v,-1.8+r*1.8,0,0,.18,2.15,2.55,color.gold);}} }
+    if (kind === 14) { const cs=[color.blue,color.cyan,color.purple,color.orange,color.gold]; for(let i=0;i<10;i++){tetra(v,-2.7+(i%5)*1.35,-.5+Math.floor(i/5)*1.35,(i%2)*.45-.2,.42+(i%3)*.08,cs[i%5]);} tri(v,[-3,-1.45,-1.1],[3,-1.45,-1.1],[0,-1.45,2.2],color.white); }
     return new Float32Array(v);
   };
   const perspective = (fov, aspect, near, far) => { const f=1/Math.tan(fov/2), nf=1/(near-far); return new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0]); };
