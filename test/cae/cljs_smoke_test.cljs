@@ -6,6 +6,8 @@
   (:require [cae.assessment :as assessment]
             [cae.industrial]
             [cae.interchange :as interchange]
+            [cae.high-fidelity]
+            [cae.verification]
             [cae.orchestration :as orchestration]
             [cae.solver :as solver]
             [cae.study :as study]))
@@ -46,6 +48,10 @@
         assessment (assessment/assess cfd {:pressure-drop-Pa {:max 200.0}})
         batch (orchestration/run-cases [with-provenance {:solver {:kind :cfd}
                                                           :flow-m3-s 0.0 :duct-diameter-m 0.4 :duct-length-m 10.0}])
+        fvm (solver/solve {:solver {:kind :fvm-compressible} :cells 8 :dx-m 0.01 :dt-s 1.0e-5 :steps 1 :initial-condition :sod-shock-tube})
+        rans (solver/solve {:solver {:kind :rans-k-epsilon} :cells 4 :dx-m 1.0 :dt-s 0.01 :steps 1 :velocity-m-s 2.0 :density-kg-m3 1.0 :viscosity-pa-s 1.0e-3})
+        matdb (solver/solve {:solver {:kind :material-database} :material :air :temperature-K 300.0})
+        benchmark (solver/solve {:solver {:kind :benchmark-suite} :case :axial-bar :force-N 10.0 :youngs-modulus-Pa 1000.0 :area-m2 2.0 :length-m 4.0})
         sensitivity (study/central-sensitivity {:solver {:kind :cfd}
                                                  :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
                                                 [:flow-m3-s] :pressure-drop-Pa 0.05)]
@@ -61,6 +67,10 @@
     (check! (= :passed (:status assessment)) "assessment did not pass" {:assessment assessment})
     (check! (= [:succeeded :failed] (mapv :status batch)) "batch isolation invalid" {:batch batch})
     (check! (pos? (:derivative sensitivity)) "CFD sensitivity direction invalid" {:sensitivity sensitivity})
+    (check! (= 8 (:cells fvm)) "FVM Sod dispatch invalid" {:result fvm})
+    (check! (= 4 (:cells rans)) "RANS dispatch invalid" {:result rans})
+    (check! (pos? (get-in matdb [:properties :dynamic-viscosity-Pa-s])) "fluid material invalid" {:result matdb})
+    (check! (:passed? benchmark) "benchmark verification invalid" {:result benchmark})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
             "OpenUSD provenance invalid" {:case with-provenance})
     (println "CLJS/NBB CAE smoke test passed")))
