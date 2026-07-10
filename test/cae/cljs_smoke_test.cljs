@@ -7,6 +7,7 @@
             [cae.industrial]
             [cae.interchange :as interchange]
             [cae.high-fidelity]
+            [cae.adapter]
             [cae.verification]
             [cae.orchestration :as orchestration]
             [cae.solver :as solver]
@@ -52,6 +53,7 @@
         rans (solver/solve {:solver {:kind :rans-k-epsilon} :cells 4 :dx-m 1.0 :dt-s 0.01 :steps 1 :velocity-m-s 2.0 :density-kg-m3 1.0 :viscosity-pa-s 1.0e-3})
         matdb (solver/solve {:solver {:kind :material-database} :material :air :temperature-K 300.0})
         benchmark (solver/solve {:solver {:kind :benchmark-suite} :case :axial-bar :force-N 10.0 :youngs-modulus-Pa 1000.0 :area-m2 2.0 :length-m 4.0})
+        external (solver/solve {:solver {:kind :external-backend} :backend :openfoam :domain :cfd :version "v11" :input-format :openfoam-case})
         sensitivity (study/central-sensitivity {:solver {:kind :cfd}
                                                  :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
                                                 [:flow-m3-s] :pressure-drop-Pa 0.05)]
@@ -71,6 +73,7 @@
     (check! (= 4 (:cells rans)) "RANS dispatch invalid" {:result rans})
     (check! (pos? (get-in matdb [:properties :dynamic-viscosity-Pa-s])) "fluid material invalid" {:result matdb})
     (check! (:passed? benchmark) "benchmark verification invalid" {:result benchmark})
+    (check! (= :adapter-pending (:status external)) "external adapter contract invalid" {:result external})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
             "OpenUSD provenance invalid" {:case with-provenance})
     (println "CLJS/NBB CAE smoke test passed")))
