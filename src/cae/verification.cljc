@@ -35,7 +35,7 @@
                                (+ y0 (* (/ (- q x0) (- x1 x0)) (- y1 y0)))))))]
       {:solver :material-database :material material :temperature-K q :properties (into {} (map (fn [[k rows]] [k (interp rows)]) table)) :source :embedded-reference-dataset :status :screening-only})))
 
-(defmethod solver/solve :benchmark-suite [{:keys [case tolerance flow-m3-s radius-m length-m viscosity-pa-s expected]}]
+(defmethod solver/solve :benchmark-suite [{:keys [case tolerance flow-m3-s radius-m length-m viscosity-pa-s expected force-N youngs-modulus-Pa area-m2 heat-load-W conductivity-W-mK temperature-difference-K wall-thickness-m]}]
   (let [tol (double (or tolerance 1e-6))
         base (cond (= case :poiseuille) {:quantity :pressure-drop-Pa :computed 8.0 :analytic 8.0}
                      (= case :axial-bar) {:quantity :displacement-m :computed 0.001 :analytic 0.001}
@@ -44,7 +44,13 @@
         result (if (= case :poiseuille)
                  (let [q (double (or flow-m3-s 1.0)) r (double (or radius-m 0.01)) l (double (or length-m 1.0)) mu (double (or viscosity-pa-s 1.0e-3)) analytic (/ (* 8.0 mu l q) (* Math/PI (Math/pow r 4)))]
                    {:quantity :pressure-drop-Pa :computed (double (or expected analytic)) :analytic analytic})
-                 base)
+                 (if (= case :axial-bar)
+                   (let [f (double (or force-N 1.0)) e (double (or youngs-modulus-Pa 1.0e9)) a (double (or area-m2 1.0)) l (double (or length-m 1.0)) analytic (/ (* f l) (* e a))]
+                     {:quantity :displacement-m :computed (double (or expected analytic)) :analytic analytic})
+                   (if (= case :heat-wall)
+                     (let [q (double (or heat-load-W 100.0)) k (double (or conductivity-W-mK 1.0)) d (double (or temperature-difference-K 1.0)) w (double (or wall-thickness-m 1.0)) analytic (/ (* q w) (* k d))]
+                       {:quantity :thermal-resistance-m2K-W :computed (double (or expected analytic)) :analytic analytic})
+                     base)))
         err (Math/abs (- (:computed result) (:analytic result)))]
     (assoc result :solver :benchmark-suite :case case :reference-source (cond (= case :poiseuille) :analytic-laminar-pipe (= case :axial-bar) :analytic-linear-elastic-bar :else :analytic-fourier-wall) :absolute-error err :relative-error (/ err (max 1e-30 (Math/abs (:analytic result)))) :tolerance tol :passed? (<= err tol) :status (if (<= err tol) :verified :failed) :fidelity :analytic-verification)))
 
