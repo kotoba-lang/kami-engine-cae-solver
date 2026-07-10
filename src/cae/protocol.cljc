@@ -26,7 +26,9 @@
   ([job] (launch-vector job "mpirun"))
   ([job launcher]
    (let [{:keys [executable arguments ranks]} (validate-job job)]
-     (vec (concat [launcher "-np" (str ranks) executable] arguments)))))
+     (if (= 1 ranks)
+       (vec (concat [executable] arguments))
+       (vec (concat [launcher "-np" (str ranks) executable] arguments))))))
 
 (defn rank-environment [job rank]
   (let [job (validate-job job)]
