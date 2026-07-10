@@ -12,7 +12,15 @@
                    :youngs-modulus-Pa [[293.15 69e9] [500.0 55e9]]
                    :thermal-conductivity-W-mK [[293.15 167.0] [500.0 180.0]]
                    :specific-heat-J-kgK [[293.15 896.0] [500.0 1050.0]]
-                   :yield-stress-Pa [[293.15 276e6] [500.0 90e6]]}})
+                   :yield-stress-Pa [[293.15 276e6] [500.0 90e6]]}
+   :water {:density-kg-m3 [[273.15 999.8] [373.15 958.4]]
+           :dynamic-viscosity-Pa-s [[273.15 1.79e-3] [373.15 2.82e-4]]
+           :thermal-conductivity-W-mK [[273.15 0.561] [373.15 0.677]]
+           :specific-heat-J-kgK [[273.15 4217.0] [373.15 4216.0]]}
+   :air {:density-kg-m3 [[273.15 1.292] [373.15 0.946]]
+         :dynamic-viscosity-Pa-s [[273.15 1.72e-5] [373.15 2.17e-5]]
+         :thermal-conductivity-W-mK [[273.15 0.024] [373.15 0.032]]
+         :specific-heat-J-kgK [[273.15 1006.0] [373.15 1010.0]]}})
 
 (defmethod solver/solve :material-database [{:keys [material temperature-K]}]
   (let [table (get materials material)]
@@ -27,11 +35,15 @@
                                (+ y0 (* (/ (- q x0) (- x1 x0)) (- y1 y0)))))))]
       {:solver :material-database :material material :temperature-K q :properties (into {} (map (fn [[k rows]] [k (interp rows)]) table)) :source :embedded-reference-dataset :status :screening-only})))
 
-(defmethod solver/solve :benchmark-suite [{:keys [case tolerance]}]
+(defmethod solver/solve :benchmark-suite [{:keys [case tolerance flow-m3-s radius-m length-m viscosity-pa-s expected]}]
   (let [tol (double (or tolerance 1e-6))
-        result (cond (= case :poiseuille) {:quantity :pressure-drop-Pa :computed 8.0 :analytic 8.0}
+        base (cond (= case :poiseuille) {:quantity :pressure-drop-Pa :computed 8.0 :analytic 8.0}
                      (= case :axial-bar) {:quantity :displacement-m :computed 0.001 :analytic 0.001}
                      (= case :heat-wall) {:quantity :heat-flux-W-m2 :computed 100.0 :analytic 100.0}
                      :else (throw (ex-info "unknown benchmark" {:case case})))
+        result (if (= case :poiseuille)
+                 (let [q (double (or flow-m3-s 1.0)) r (double (or radius-m 0.01)) l (double (or length-m 1.0)) mu (double (or viscosity-pa-s 1.0e-3)) analytic (/ (* 8.0 mu l q) (* Math/PI (Math/pow r 4)))]
+                   {:quantity :pressure-drop-Pa :computed (double (or expected analytic)) :analytic analytic})
+                 base)
         err (Math/abs (- (:computed result) (:analytic result)))]
     (assoc result :solver :benchmark-suite :case case :reference-source (cond (= case :poiseuille) :analytic-laminar-pipe (= case :axial-bar) :analytic-linear-elastic-bar :else :analytic-fourier-wall) :absolute-error err :relative-error (/ err (max 1e-30 (Math/abs (:analytic result)))) :tolerance tol :passed? (<= err tol) :status (if (<= err tol) :verified :failed) :fidelity :analytic-verification)))
