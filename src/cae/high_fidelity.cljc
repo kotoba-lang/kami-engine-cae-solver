@@ -21,6 +21,16 @@
   (let [u (double velocity-m-s) l (double length-scale-m) nu (double kinematic-viscosity-m2-s) re (/ (* u l) nu) k (* 0.5 u u) eps (/ (Math/pow 0.09 0.75) l (Math/pow (max k 1e-12) 0.25))]
     {:solver :turbulence-model :reynolds-number re :turbulent-kinetic-energy-m2-s2 k :dissipation-m2-s3 eps :model :mixing-length :fidelity :closure-reference :status :screening-only}))
 
+(defmethod solver/solve :combustion-reaction [{:keys [temperature-K fuel-mass-fraction dt-s steps pre-exponential-1-s activation-energy-J-mol heat-release-J-kg]}]
+  (let [r 8.314462618 t (double temperature-K) y (double fuel-mass-fraction) dt (double dt-s) n (long steps) a (double pre-exponential-1-s) ea (double activation-energy-J-mol) q (double heat-release-J-kg)
+        step (fn [[temp fuel]] (let [rate (* a fuel (Math/exp (- (/ ea (* r temp))))) consumed (min fuel (* dt rate))] [(+ temp (* q consumed)) (- fuel consumed)]))
+        [temp fuel] (nth (iterate step [t y]) n)]
+    {:solver :combustion-reaction :temperature-K temp :fuel-mass-fraction fuel :reaction-rate-1-s (* a fuel (Math/exp (- (/ ea (* r temp))))) :steps n :model :arrhenius-single-step :fidelity :reaction-reference :status :screening-only}))
+
+(defmethod solver/solve :boundary-layer [{:keys [velocity-m-s density-kg-m3 viscosity-pa-s distance-m]}]
+  (let [u (double velocity-m-s) rho (double density-kg-m3) mu (double viscosity-pa-s) x (double distance-m) re (/ (* rho u x) mu) cf (if (< re 5e5) (/ 0.664 (Math/sqrt re)) (/ 0.0592 (Math/pow re 0.2))) delta (* 5.0 x (Math/sqrt (/ mu (* rho u x))))]
+    {:solver :boundary-layer :reynolds-number re :skin-friction-coefficient cf :boundary-layer-thickness-m delta :regime (if (< re 5e5) :laminar :turbulent) :fidelity :correlation-reference :status :screening-only}))
+
 (defmethod solver/solve :adaptive-mesh [{:keys [coordinates field tolerance max-level]}]
   (let [tol (double (or tolerance 1e-3)) max-level (long (or max-level 1)) pairs (map vector coordinates (rest coordinates) field (rest field))
         marked (vec (keep-indexed (fn [i [[x0 x1] f0 f1]] (when (> (Math/abs (- f1 f0)) tol) i)) pairs))
@@ -34,3 +44,15 @@
 (defmethod solver/solve :fem-elastoplastic [{:keys [strain youngs-modulus-Pa yield-stress-Pa hardening-Pa]}]
   (let [e (double youngs-modulus-Pa) sy (double yield-stress-Pa) h (double (or hardening-Pa 0.0)) eps (double strain) trial (* e eps) plastic? (> (Math/abs trial) sy) sign (if (neg? trial) -1.0 1.0) plastic-strain (if plastic? (* sign (/ (- (Math/abs trial) sy) (+ e h))) 0.0) stress (if plastic? (* sign (+ sy (* h (Math/abs plastic-strain)))) trial)]
     {:solver :fem-elastoplastic :stress-Pa stress :plastic-strain plastic-strain :yielded? plastic? :tangent-modulus-Pa (if plastic? (/ (* e h) (+ e h 1e-30)) e) :algorithm :return-mapping :fidelity :nonlinear-reference :status :screening-only}))
+
+(defmethod solver/solve :friction-contact [{:keys [normal-force-N tangential-force-N friction-coefficient penalty-stiffness-N-m]}]
+  (let [n (double normal-force-N) t (double tangential-force-N) mu (double friction-coefficient) k (double penalty-stiffness-N-m) limit (* mu (Math/abs n)) slip? (> (Math/abs t) limit) traction (if slip? (* limit (if (neg? t) -1.0 1.0)) t)]
+    {:solver :friction-contact :normal-force-N n :tangential-traction-N traction :friction-limit-N limit :sliding? slip? :penetration-m (/ (Math/abs n) k) :fidelity :contact-reference :status :screening-only}))
+
+(defmethod solver/solve :fracture-criterion [{:keys [stress-Pa fracture-toughness-Pa-m stress-intensity-factor-Pa-sqrt-m]}]
+  (let [s (double stress-Pa) k (double stress-intensity-factor-Pa-sqrt-m) kc (double fracture-toughness-Pa-m) ratio (/ k kc)]
+    {:solver :fracture-criterion :stress-Pa s :stress-intensity-factor-Pa-sqrt-m k :utilization ratio :fractured? (>= ratio 1.0) :criterion :linear-elastic-fracture :fidelity :fracture-reference :status :screening-only}))
+
+(defmethod solver/solve :benchmark-comparison [{:keys [computed expected tolerance metric]}]
+  (let [c (double computed) e (double expected) tol (double tolerance) err (Math/abs (- c e)) rel (/ err (max (Math/abs e) 1e-30))]
+    {:solver :benchmark-comparison :metric metric :computed c :expected e :absolute-error err :relative-error rel :passed? (<= err tol) :tolerance tol :status (if (<= err tol) :verified :failed) :fidelity :verification}))
