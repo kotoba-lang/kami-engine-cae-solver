@@ -21,6 +21,24 @@
   (let [u (double velocity-m-s) l (double length-scale-m) nu (double kinematic-viscosity-m2-s) re (/ (* u l) nu) k (* 0.5 u u) eps (/ (Math/pow 0.09 0.75) l (Math/pow (max k 1e-12) 0.25))]
     {:solver :turbulence-model :reynolds-number re :turbulent-kinetic-energy-m2-s2 k :dissipation-m2-s3 eps :model :mixing-length :fidelity :closure-reference :status :screening-only}))
 
+(defmethod solver/solve :rans-k-epsilon [{:keys [cells dx-m dt-s steps velocity-m-s density-kg-m3 viscosity-pa-s]}]
+  (let [n (long cells) dx (double dx-m) dt (double dt-s) u (double velocity-m-s) rho (double density-kg-m3) nu (/ (double viscosity-pa-s) rho)
+        c1 1.44 c2 1.92 sigma-k 1.0 sigma-e 1.3 init (vec (repeat n [1e-6 1e-6]))
+        step (fn [state]
+               (vec (for [i (range n)]
+                      (let [[k e] (state i)
+                            km (first (state (max 0 (dec i))))
+                            kp (first (state (min (dec n) (inc i))))
+                            em (second (state (max 0 (dec i))))
+                            ep (second (state (min (dec n) (inc i))))
+                            prod (* 0.09 (/ k (max e 1e-12)) u u (/ 1.0 (* dx dx)))
+                            dk (* (/ nu sigma-k) (/ (+ km (* -2 k) kp) (* dx dx)))
+                            de (* (/ nu sigma-e) (/ (+ em (* -2 e) ep) (* dx dx)))]
+                        [(max 1e-12 (+ k (* dt (- prod e)) (* dt dk)))
+                         (max 1e-12 (+ e (* dt (- (* c1 prod (/ e (max k 1e-12))) (* c2 (/ (* e e) (max k 1e-12))))) (* dt de)))]))))
+        state (nth (iterate step init) (long steps))]
+    {:solver :rans-k-epsilon :k-epsilon state :cells n :constants {:c1-epsilon c1 :c2-epsilon c2 :sigma-k sigma-k :sigma-epsilon sigma-e} :fidelity :rans-reference :status :screening-only}))
+
 (defmethod solver/solve :combustion-reaction [{:keys [temperature-K fuel-mass-fraction dt-s steps pre-exponential-1-s activation-energy-J-mol heat-release-J-kg]}]
   (let [r 8.314462618 t (double temperature-K) y (double fuel-mass-fraction) dt (double dt-s) n (long steps) a (double pre-exponential-1-s) ea (double activation-energy-J-mol) q (double heat-release-J-kg)
         step (fn [[temp fuel]] (let [rate (* a fuel (Math/exp (- (/ ea (* r temp))))) consumed (min fuel (* dt rate))] [(+ temp (* q consumed)) (- fuel consumed)]))
@@ -53,6 +71,11 @@
 (defmethod solver/solve :fem-elastoplastic [{:keys [strain youngs-modulus-Pa yield-stress-Pa hardening-Pa]}]
   (let [e (double youngs-modulus-Pa) sy (double yield-stress-Pa) h (double (or hardening-Pa 0.0)) eps (double strain) trial (* e eps) plastic? (> (Math/abs trial) sy) sign (if (neg? trial) -1.0 1.0) plastic-strain (if plastic? (* sign (/ (- (Math/abs trial) sy) (+ e h))) 0.0) stress (if plastic? (* sign (+ sy (* h (Math/abs plastic-strain)))) trial)]
     {:solver :fem-elastoplastic :stress-Pa stress :plastic-strain plastic-strain :yielded? plastic? :tangent-modulus-Pa (if plastic? (/ (* e h) (+ e h 1e-30)) e) :algorithm :return-mapping :fidelity :nonlinear-reference :status :screening-only}))
+
+(defmethod solver/solve :finite-strain-elastic [{:keys [stretch youngs-modulus-Pa poisson-ratio]}]
+  (let [lambda (double stretch) e (double youngs-modulus-Pa) nu (double poisson-ratio) mu (/ e (* 2.0 (+ 1.0 nu))) kappa (/ e (* 3.0 (- 1.0 (* 2.0 nu)))) j lambda ;; uniaxial surrogate deformation gradient
+        sigma (* (/ 1.0 j) (+ (* mu (- (* lambda lambda) 1.0)) (* kappa (Math/log j))))]
+    {:solver :finite-strain-elastic :stretch lambda :cauchy-stress-Pa sigma :jacobian j :shear-modulus-Pa mu :bulk-modulus-Pa kappa :model :compressible-neo-hookean-1d :fidelity :finite-strain-reference :status :screening-only}))
 
 (defmethod solver/solve :friction-contact [{:keys [normal-force-N tangential-force-N friction-coefficient penalty-stiffness-N-m]}]
   (let [n (double normal-force-N) t (double tangential-force-N) mu (double friction-coefficient) k (double penalty-stiffness-N-m) limit (* mu (Math/abs n)) slip? (> (Math/abs t) limit) traction (if slip? (* limit (if (neg? t) -1.0 1.0)) t)]
