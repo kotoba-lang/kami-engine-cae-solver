@@ -55,6 +55,7 @@
         benchmark (solver/solve {:solver {:kind :benchmark-suite} :case :axial-bar :force-N 10.0 :youngs-modulus-Pa 1000.0 :area-m2 2.0 :length-m 4.0})
         external (solver/solve {:solver {:kind :external-backend} :backend :openfoam :domain :cfd :version "v11" :input-format :openfoam-case})
         validation (solver/solve {:solver {:kind :validation-report} :report-id "cljs-nightly" :checks [benchmark {:passed? true}]})
+        balance (solver/solve {:solver {:kind :mpi-load-balance} :weights [1.0 1.0 8.0 1.0 1.0] :ranks 2})
         sensitivity (study/central-sensitivity {:solver {:kind :cfd}
                                                  :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
                                                 [:flow-m3-s] :pressure-drop-Pa 0.05)]
@@ -76,6 +77,7 @@
     (check! (:passed? benchmark) "benchmark verification invalid" {:result benchmark})
     (check! (= :adapter-pending (:status external)) "external adapter contract invalid" {:result external})
     (check! (= :verified (:status validation)) "validation report gate invalid" {:result validation})
+    (check! (= 5 (count (:assignment balance))) "MPI load balance invalid" {:result balance})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
             "OpenUSD provenance invalid" {:case with-provenance})
     (println "CLJS/NBB CAE smoke test passed")))
