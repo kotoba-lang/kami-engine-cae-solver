@@ -68,6 +68,7 @@
         field (reader/openfoam-field {:name "p" :text "internalField nonuniform List<scalar> 2 (101325 101300)"})
         table (reader/calculix-table {:name "U" :columns [:node :ux] :text "1 0.1\n2 0.2"})
         ds (dataset/verify-manifest (dataset/manifest {:id "fsi" :revision "abc" :license :mit :domain :fsi :files ["mesh.h5"]}))
+        vtk (reader/vtk-legacy {:text "# vtk DataFile Version 3.0\nASCII\nDATASET POLYDATA\nPOINTS 2 float\n0 0 0 1 0 0\nPOINT_DATA 2\nSCALARS p float\nLOOKUP_TABLE default\n1 2"})
         sensitivity (study/central-sensitivity {:solver {:kind :cfd}
                                                  :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
                                                 [:flow-m3-s] :pressure-drop-Pa 0.05)]
@@ -98,6 +99,7 @@
     (check! (= 3 (count (:values field))) "OpenFOAM reader invalid" {:result field})
     (check! (= 2 (count (:rows table))) "CalculiX reader invalid" {:result table})
     (check! (= :metadata-verified (:status ds)) "dataset manifest invalid" {:result ds})
+    (check! (= 2 (:point-count vtk)) "VTK reader invalid" {:result vtk})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
             "OpenUSD provenance invalid" {:case with-provenance})
     (println "CLJS/NBB CAE smoke test passed")))

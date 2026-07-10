@@ -24,3 +24,16 @@
 
 (defn result-manifest [{:keys [backend case-id files]}]
   {:backend (keyword backend) :case/id case-id :files (vec files) :format :cae-result-manifest-v1})
+
+(defn vtk-legacy [{:keys [text]}]
+  (let [tokens (str/split (str text) #"\s+")
+        find-index (fn [needle] (or (first (keep-indexed (fn [i v] (when (= v needle) i)) tokens)) -1))
+        point-at (find-index "POINTS")
+        scalar-at (find-index "SCALARS")
+        npoints (if (pos? point-at) (long (number (nth tokens (inc point-at)))) 0)
+        point-start (+ point-at 3)
+        points (if (pos? point-at) (vec (map number (take (* 3 npoints) (drop point-start tokens)))) [])
+        scalar-name (when (pos? scalar-at) (nth tokens (inc scalar-at)))
+        scalar-start (+ scalar-at 4)
+        scalars (if (pos? scalar-at) (vec (map number (take npoints (drop scalar-start tokens)))) [])]
+    {:format :vtk-legacy-ascii :points (vec (partition 3 points)) :scalars {scalar-name scalars} :point-count npoints}))
