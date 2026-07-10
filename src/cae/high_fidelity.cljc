@@ -73,6 +73,14 @@
                      (range (count partitions)) partitions)]
     {:solver :mpi-halo-exchange :partitions synced :messages (* 2 (max 0 (dec (count partitions)))) :communication :deterministic-halo :fidelity :parallel-reference :status :screening-only}))
 
+(defmethod solver/solve :mpi-load-balance [{:keys [weights ranks]}]
+  (let [weights (vec (map double weights)) p (long ranks) total (reduce + weights) target (/ total p)
+        assignment (loop [i 0 r 0 acc [] load 0.0]
+                     (if (= i (count weights)) acc
+                       (let [w (weights i) next-load (+ load w) move? (and (< r (dec p)) (> next-load target) (pos? load))]
+                         (recur (inc i) (if move? (inc r) r) (conj acc (if move? (inc r) r)) (if move? w next-load)))))]
+    {:solver :mpi-load-balance :assignment assignment :rank-loads (mapv (fn [r] (reduce + (map (fn [[i a]] (if (= r a) (weights i) 0.0)) (map-indexed vector assignment)))) (range p)) :target-load target :algorithm :greedy-contiguous :fidelity :parallel-reference :status :screening-only}))
+
 (defmethod solver/solve :fem-elastoplastic [{:keys [strain youngs-modulus-Pa yield-stress-Pa hardening-Pa]}]
   (let [e (double youngs-modulus-Pa) sy (double yield-stress-Pa) h (double (or hardening-Pa 0.0)) eps (double strain) trial (* e eps) plastic? (> (Math/abs trial) sy) sign (if (neg? trial) -1.0 1.0) plastic-strain (if plastic? (* sign (/ (- (Math/abs trial) sy) (+ e h))) 0.0) stress (if plastic? (* sign (+ sy (* h (Math/abs plastic-strain)))) trial)]
     {:solver :fem-elastoplastic :stress-Pa stress :plastic-strain plastic-strain :yielded? plastic? :tangent-modulus-Pa (if plastic? (/ (* e h) (+ e h 1e-30)) e) :algorithm :return-mapping :fidelity :nonlinear-reference :status :screening-only}))
