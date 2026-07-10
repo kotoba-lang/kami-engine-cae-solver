@@ -22,7 +22,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - name: Run portable CLJS smoke test
         run: npx --yes nbb -cp src:test -e "(require '[cae.cljs-smoke-test])"
       - name: Generate Pages report from CLJS solver runtime
