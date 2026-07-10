@@ -90,7 +90,7 @@ kernels behind the same `cae.solver/solve` dispatch:
 | `:fem-mesh` / `:mesh-quality` / `:adaptive-mesh` | TRI3/TET4 generation, area/volume quality and gradient-marked refinement |
 | `:mpi-domain` / `:mpi-halo-exchange` / `:mpi-load-balance` | deterministic partition, ghost indices, halo synchronization and weighted rank balancing |
 | `:material-database` | temperature-dependent SS304, Al6061, water and air properties |
-| `:benchmark-suite` / `:benchmark-catalog` / `:validation-report` | analytic Poiseuille/bar/wall checks, Sod/Taylor/cantilever metadata, RMSE and aggregate regression gate |
+| `:benchmark-suite` / `:benchmark-catalog` / `:experimental-comparison` / `:validation-report` | analytic Poiseuille/bar/wall checks, Sod/Taylor/cantilever metadata, experimental RMSE/bias and aggregate regression gate |
 
 These kernels are deliberately labelled `:fidelity :*-reference` and
 `:status :screening-only`. They define a deterministic CLJ/CLJS boundary for
