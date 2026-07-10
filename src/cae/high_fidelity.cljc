@@ -41,6 +41,15 @@
   (let [n (long cells) p (long ranks) r (long (or rank 0)) g (long (or ghost-width 1)) base (quot n p) rem (mod n p) start (+ (* r base) (min r rem)) count (+ base (if (< r rem) 1 0)) owned (vec (range start (+ start count))) ghosts (vec (concat (range (max 0 (- start g)) start) (range (+ start count) (min n (+ start count g)))))]
     {:solver :mpi-domain :rank r :ranks p :owned-indices owned :ghost-indices ghosts :neighbors (vec (concat (when (pos? r) [(dec r)]) (when (< r (dec p)) [(inc r)]))) :communication :halo-exchange :fidelity :parallel-contract :status :screening-only}))
 
+(defmethod solver/solve :mpi-halo-exchange [{:keys [partitions]}]
+  (let [partitions (vec partitions)
+        synced (mapv (fn [i p]
+                       (let [left (when (pos? i) (last (:owned (partitions (dec i)))))
+                             right (when (< i (dec (count partitions))) (first (:owned (partitions (inc i)))))]
+                         (assoc p :ghost-values (vec (remove nil? [left right])) :synchronized? true)))
+                     (range (count partitions)) partitions)]
+    {:solver :mpi-halo-exchange :partitions synced :messages (* 2 (max 0 (dec (count partitions)))) :communication :deterministic-halo :fidelity :parallel-reference :status :screening-only}))
+
 (defmethod solver/solve :fem-elastoplastic [{:keys [strain youngs-modulus-Pa yield-stress-Pa hardening-Pa]}]
   (let [e (double youngs-modulus-Pa) sy (double yield-stress-Pa) h (double (or hardening-Pa 0.0)) eps (double strain) trial (* e eps) plastic? (> (Math/abs trial) sy) sign (if (neg? trial) -1.0 1.0) plastic-strain (if plastic? (* sign (/ (- (Math/abs trial) sy) (+ e h))) 0.0) stress (if plastic? (* sign (+ sy (* h (Math/abs plastic-strain)))) trial)]
     {:solver :fem-elastoplastic :stress-Pa stress :plastic-strain plastic-strain :yielded? plastic? :tangent-modulus-Pa (if plastic? (/ (* e h) (+ e h 1e-30)) e) :algorithm :return-mapping :fidelity :nonlinear-reference :status :screening-only}))

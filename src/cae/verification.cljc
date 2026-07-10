@@ -34,4 +34,4 @@
                      (= case :heat-wall) {:quantity :heat-flux-W-m2 :computed 100.0 :analytic 100.0}
                      :else (throw (ex-info "unknown benchmark" {:case case})))
         err (Math/abs (- (:computed result) (:analytic result)))]
-    (assoc result :solver :benchmark-suite :case case :absolute-error err :relative-error (/ err (max 1e-30 (Math/abs (:analytic result)))) :tolerance tol :passed? (<= err tol) :status (if (<= err tol) :verified :failed) :fidelity :analytic-verification)))
+    (assoc result :solver :benchmark-suite :case case :reference-source (cond (= case :poiseuille) :analytic-laminar-pipe (= case :axial-bar) :analytic-linear-elastic-bar :else :analytic-fourier-wall) :absolute-error err :relative-error (/ err (max 1e-30 (Math/abs (:analytic result)))) :tolerance tol :passed? (<= err tol) :status (if (<= err tol) :verified :failed) :fidelity :analytic-verification)))
