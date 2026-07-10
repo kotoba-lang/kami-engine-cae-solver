@@ -12,10 +12,15 @@
         vl (/ ml rl) vr (/ mr rr) al (Math/sqrt (* gamma (/ pl rl))) ar (Math/sqrt (* gamma (/ pr rr))) s (max (+ (Math/abs vl) al) (+ (Math/abs vr) ar)) fl (flux l) fr (flux r)]
     (mapv - (mapv + l (mapv #(* (/ dt dx) %) (mapv - fl fr))) (mapv #(* (/ dt dx) %) (mapv #(* s %) (mapv - r l))))))
 
-(defmethod solver/solve :fvm-compressible [{:keys [cells dx-m dt-s steps initial-state]}]
-  (let [n (long cells) dx (double dx-m) dt (double dt-s) init (vec (or initial-state (repeat n [1.0 0.0 250000.0])))
+(defmethod solver/solve :fvm-compressible [{:keys [cells dx-m dt-s steps initial-state initial-condition]}]
+  (let [n (long cells) dx (double dx-m) dt (double dt-s)
+        sod (when (= initial-condition :sod-shock-tube)
+              (let [mid (quot n 2) left [1.0 0.0 (/ 1.0 (- gamma 1.0))] right [0.125 0.0 (/ 0.1 (- gamma 1.0))]]
+                (vec (concat (repeat mid left) (repeat (- n mid) right)))))
+        init (vec (or initial-state sod (repeat n [1.0 0.0 250000.0])))
         advance (fn [u] (vec (for [i (range n)] (let [l (if (zero? i) (u i) (u (dec i))) r (if (= i (dec n)) (u i) (u (inc i)))] (rusanov l r dt dx)))))]
-    {:solver :fvm-compressible :state (nth (iterate advance init) (long steps)) :cells n :flux :rusanov :equation :euler-1d :gamma gamma :fidelity :finite-volume-reference :status :screening-only}))
+    (let [state (nth (iterate advance init) (long steps))]
+      {:solver :fvm-compressible :state state :density-profile (mapv first state) :pressure-profile (mapv (fn [[r m e]] (pressure r m e)) state) :cells n :flux :rusanov :equation :euler-1d :gamma gamma :initial-condition initial-condition :fidelity :finite-volume-reference :status :screening-only})))
 
 (defmethod solver/solve :turbulence-model [{:keys [velocity-m-s length-scale-m kinematic-viscosity-m2-s]}]
   (let [u (double velocity-m-s) l (double length-scale-m) nu (double kinematic-viscosity-m2-s) re (/ (* u l) nu) k (* 0.5 u u) eps (/ (Math/pow 0.09 0.75) l (Math/pow (max k 1e-12) 0.25))]
