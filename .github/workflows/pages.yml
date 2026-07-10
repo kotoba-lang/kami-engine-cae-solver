@@ -35,6 +35,8 @@ jobs:
           cp scripts/kami_cae_webgpu.js dist/kami-cae-webgpu.js
       - name: Verify Kami Engine WASM host contract
         run: node scripts/verify_kami_wasm.mjs dist/kami-clj-demo.wasm scripts/kami_cae_webgpu.js
+      - name: Verify advanced 3D scene contract
+        run: node scripts/verify_advanced_scenes.mjs dist/index.html scripts/kami_cae_webgpu.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
