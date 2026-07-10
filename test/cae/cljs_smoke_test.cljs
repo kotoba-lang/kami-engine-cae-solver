@@ -59,6 +59,7 @@
         balance (solver/solve {:solver {:kind :mpi-load-balance} :weights [1.0 1.0 8.0 1.0 1.0] :ranks 2})
         experiment (solver/solve {:solver {:kind :experimental-comparison} :dataset :wind-tunnel :predicted [1.0 2.0] :measured [1.0 2.0] :tolerance 1.0e-6})
         mpi-message (protocol/mpi-message {:source 0 :target 1 :tag :halo :payload [1 2]})
+        job (protocol/validate-job (protocol/job-spec {:executable "kotoba-worker" :arguments ["--case" "x"] :ranks 2 :threads 4}))
         sensitivity (study/central-sensitivity {:solver {:kind :cfd}
                                                  :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
                                                 [:flow-m3-s] :pressure-drop-Pa 0.05)]
@@ -83,6 +84,7 @@
     (check! (= 5 (count (:assignment balance))) "MPI load balance invalid" {:result balance})
     (check! (= :verified (:status experiment)) "experimental comparison invalid" {:result experiment})
     (check! (= :halo (:tag mpi-message)) "MPI protocol invalid" {:result mpi-message})
+    (check! (= ["mpirun" "-np" "2" "kotoba-worker" "--case" "x"] (protocol/launch-vector job)) "job argv invalid" {:result job})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
             "OpenUSD provenance invalid" {:case with-provenance})
     (println "CLJS/NBB CAE smoke test passed")))
