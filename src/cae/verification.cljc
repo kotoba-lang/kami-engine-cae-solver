@@ -47,3 +47,14 @@
                  base)
         err (Math/abs (- (:computed result) (:analytic result)))]
     (assoc result :solver :benchmark-suite :case case :reference-source (cond (= case :poiseuille) :analytic-laminar-pipe (= case :axial-bar) :analytic-linear-elastic-bar :else :analytic-fourier-wall) :absolute-error err :relative-error (/ err (max 1e-30 (Math/abs (:analytic result)))) :tolerance tol :passed? (<= err tol) :status (if (<= err tol) :verified :failed) :fidelity :analytic-verification)))
+
+(def ^:private benchmark-catalog
+  {:sod-shock-tube {:domain :compressible-cfd :reference "Sod 1978 shock tube" :metric :density-profile}
+   :taylor-bar {:domain :transient-solid-fem :reference "Taylor 1948 impact test" :metric :final-length}
+   :poiseuille {:domain :incompressible-cfd :reference "analytic laminar pipe" :metric :pressure-drop}
+   :cantilever-tip {:domain :linear-fem :reference "Euler-Bernoulli beam" :metric :tip-displacement}})
+
+(defmethod solver/solve :benchmark-catalog [{:keys [benchmark computed reference tolerance]}]
+  (when-not (get benchmark-catalog benchmark) (throw (ex-info "unknown benchmark catalog entry" {:benchmark benchmark :available (keys benchmark-catalog)})))
+  (let [computed (vec computed) reference (vec reference) tol (double (or tolerance 1e-6)) errors (mapv (fn [a b] (Math/abs (- (double a) (double b)))) computed reference) rmse (Math/sqrt (/ (reduce + (map #(* % %) errors)) (max 1 (count errors)))) max-error (apply max 0.0 errors)]
+    {:solver :benchmark-catalog :benchmark benchmark :metadata (get benchmark-catalog benchmark) :rmse rmse :max-error max-error :samples (count errors) :tolerance tol :passed? (<= max-error tol) :status (if (<= max-error tol) :verified :failed) :fidelity :public-benchmark-reference}))
