@@ -68,3 +68,8 @@
 (defmethod solver/solve :validation-report [{:keys [checks report-id]}]
   (let [checks (vec checks) passed (count (filter :passed? checks)) failed (- (count checks) passed)]
     {:solver :validation-report :report-id report-id :checks checks :total (count checks) :passed passed :failed failed :passed? (and (pos? (count checks)) (zero? failed)) :status (if (and (pos? (count checks)) (zero? failed)) :verified :failed) :fidelity :verification-gate}))
+
+(defmethod solver/solve :experimental-comparison [{:keys [predicted measured uncertainty tolerance dataset]}]
+  (let [predicted (vec predicted) measured (vec measured) errors (mapv (fn [p m] (- (double p) (double m))) predicted measured) abs-errors (mapv #(Math/abs %) errors) rmse (Math/sqrt (/ (reduce + (map #(* % %) errors)) (max 1 (count errors)))) bias (/ (reduce + errors) (max 1 (count errors))) tol (double (or tolerance 1e-6))
+        normalized (when uncertainty (mapv (fn [e u] (/ e (max 1e-30 (double u)))) errors uncertainty))]
+    {:solver :experimental-comparison :dataset dataset :samples (count errors) :rmse rmse :maximum-absolute-error (apply max 0.0 abs-errors) :mean-bias bias :normalized-residuals normalized :tolerance tol :passed? (<= rmse tol) :status (if (<= rmse tol) :verified :failed) :fidelity :experimental-verification}))
