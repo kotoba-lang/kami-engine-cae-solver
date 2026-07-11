@@ -26,6 +26,8 @@
                     :background "#061220cc" :padding "12px 14px" :border-radius "12px"
                     :font-weight "700" :min-width "240px"}))
 (def $metric (css {:color "#7af4ba" :min-height "1.25em"}))
+(def $hint (css {:background "#e8fff5" :border "1px solid #9ee8c7" :padding "10px 14px"
+                 :border-radius "12px" :font-weight "700" :margin "0 0 12px"}))
 (def $scene-list (css :flex :flex-wrap {:gap "8px" :margin "12px 0"}))
 (def $controls (css :flex {:gap "10px" :align-items "center" :margin "0 0 18px"}))
 (def $button (css {:border "1px solid #bbcad8" :background "#fff" :padding "8px 12px"
@@ -125,6 +127,8 @@
                   [:div {:class $scene-list}
                    (map-indexed (fn [i label] [:button {:class (str $button (when (zero? i) " active"))
                                                           :data-kami-scene i} label]) scenes)]
+                  [:div {:id "kami-action-status" :class $hint}
+                   "Drag canvas: inlet impulse · click or drag to apply an action"]
                   [:div {:class $controls}
                    [:button {:id "kami-sim-toggle" :class $button} "Pause"]
                    [:button {:id "kami-sim-reset" :class $button} "Reset"]

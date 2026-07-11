@@ -14,6 +14,10 @@ for (const id of ["kami-sim-toggle", "kami-sim-reset", "kami-sim-speed", "kami-s
 for (const contract of ["advance-simulation", "initial-simulation", "telemetry"]) {
   if (!cljs.includes(contract)) throw new Error(`missing realtime CLJS contract: ${contract}`);
 }
+for (const contract of ["pointerdown", "pointermove", "pointer-action", "action-labels"]) {
+  if (!cljs.includes(contract)) throw new Error(`missing interaction contract: ${contract}`);
+}
+if (!html.includes('id="kami-action-status"')) throw new Error("missing per-scene interaction status");
 if (!html.includes("./css/main.css") || !css.includes("build_pages_report")) {
   throw new Error("Hiccup/Shadow CSS report output is missing");
 }
