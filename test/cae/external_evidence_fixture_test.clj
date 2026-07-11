@@ -68,3 +68,16 @@
            (get-in fixture [:result :final :peeq])))
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (concat (:input-files fixture) (:result-files fixture))))))
+
+(deftest committed-calculix-three-grid-study-quantifies-discretization-error
+  (let [fixture (fixture "cae/evidence/calculix-2.21-nlgeom-cantilever-three-grid-gci.edn")
+        study (:study fixture)]
+    (is (= :external-mesh-convergence-verified (:status fixture)))
+    (is (= [10 80 640] (mapv :elements (:levels study))))
+    (is (apply < (map #(abs (:value %)) (:levels study))))
+    (is (< 1.0 (:observed-order study) 2.0))
+    (is (< 0.05 (:fine-relative-error-estimate study) 0.06))
+    (is (< 0.06 (:fine-gci study) 0.07))
+    (is (= 18 (count (mapcat :files (:levels study)))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (mapcat :files (:levels study))))))

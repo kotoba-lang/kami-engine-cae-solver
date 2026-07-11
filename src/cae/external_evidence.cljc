@@ -165,6 +165,48 @@
                                                 (= (:maximum-peeq result) (:peeq final)))}]
     {:checks checks :passed? (every? true? (vals checks))}))
 
+(defn calculix-tip-displacement [dat-text]
+  (let [section (some->> (re-seq #"(?ms)displacements \(vx,vy,vz\) for set TIP and time\s+([0-9.Ee+-]+)\s*\n(.*?)(?=\n\s*INCREMENT|\z)" dat-text)
+                         last)
+        time (some-> section second parse-number)
+        rows (if-not section []
+                 (mapv (fn [[_ node ux uy uz]]
+                         {:node (long (parse-number node)) :ux (parse-number ux)
+                          :uy (parse-number uy) :uz (parse-number uz)})
+                       (re-seq #"(?m)^\s*(\d+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)$"
+                               (nth section 2))))
+        values (mapv :uz rows)]
+    {:time time :nodes rows :node-count (count rows)
+     :mean-uz (when (seq values) (/ (reduce + values) (count values)))
+     :spread-uz (when (seq values) (- (apply max values) (apply min values)))}))
+
+(defn mesh-convergence-evidence
+  "Compute the observed order, Richardson extrapolation and fine-grid GCI for
+  three consistently refined scalar solutions ordered coarse to fine."
+  [{:keys [levels refinement-ratio safety-factor]
+    :or {refinement-ratio 2.0 safety-factor 1.25}}]
+  (let [[f1 f2 f3] (map :value levels)
+        d12 (- f1 f2) d23 (- f2 f3)
+        monotonic? (pos? (* d12 d23))
+        p (when (and monotonic? (not (zero? d23)))
+            (/ (Math/log (abs (/ d12 d23))) (Math/log refinement-ratio)))
+        denominator (when p (- (Math/pow refinement-ratio p) 1.0))
+        extrapolated (when (and denominator (not (zero? denominator)))
+                       (+ f3 (/ (- f3 f2) denominator)))
+        relative-error (when (and denominator (not (zero? denominator)) (not (zero? f3)))
+                         (/ (abs (/ (- f3 f2) f3)) denominator))
+        gci (when relative-error (* safety-factor relative-error))
+        checks {:three-levels? (= 3 (count levels))
+                :all-runs-passed? (every? :passed? levels)
+                :consistent-refinement? (= [4.0 2.0 1.0] (mapv :h-relative levels))
+                :monotonic? monotonic? :positive-order? (and p (pos? p))
+                :finite-gci? (and gci (not #?(:clj (Double/isNaN gci) :cljs (js/isNaN gci)))
+                                  (pos? gci) (< gci 0.1))}]
+    {:format :three-grid-gci-v1 :levels levels :refinement-ratio refinement-ratio
+     :safety-factor safety-factor :observed-order p :richardson-extrapolated extrapolated
+     :fine-relative-error-estimate relative-error :fine-gci gci
+     :checks checks :passed? (every? true? (vals checks))}))
+
 (defn process-evidence
   [{:keys [solver solver-version image-digest command exit-code input-files result-files log-text result-text
            platform executed-at case-id]}]
