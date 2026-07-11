@@ -60,13 +60,13 @@
  {:scope/id :external/calculix-nlgeom-cantilever-mesh-study
   :scope {:solver :calculix :version "2.21" :dimension :3d :element :c3d8
           :physics :finite-deformation-elastic-cantilever}
-  :numerical-verification :three-grid-gci-quantified
+  :numerical-verification :four-level-rolling-gci-target-passed
   :experimental-validation :missing
   :software-quality :generated-mesh-and-hash-evidence
   :release-status :not-release-qualified
   :included [:consistent-refinement :monotonic-tip-response :observed-order
-             :richardson-extrapolation :grid-convergence-index]
-  :excluded [:mesh-independent-claim :target-error-satisfied :contact :plasticity
+             :richardson-extrapolation :grid-convergence-index :gci-below-3-percent]
+  :excluded [:mesh-independent-claim :universal-error-target :contact :plasticity
              :experimental-validation :industrial-geometry :design-signoff]}
  {:scope/id :cfd/nasa-sbse-rans
   :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump

@@ -228,15 +228,15 @@ is a constrained uniaxial-strain material verification, not calibration for a
 specific production alloy; cyclic hardening, anisotropy, damage, rate and
 temperature dependence still require independent material data and validation.
 
-`clojure -M:dataset -m run-calculix-mesh-study` generates and executes three
-consistently refined C3D8 meshes for a 3D NLGEOM cantilever: 10, 80 and 640
-elements. It hashes every generated INP and solver output, requires all three
-real runs to complete, and evaluates the mean tip displacement with a three-
-grid Richardson/GCI procedure. The committed responses are `-1.215452`,
-`-1.6236467` and `-1.779019`, giving observed order `1.3935`, extrapolated
-response `-1.87450`, and fine-grid GCI `6.709%`. The monotonic study is valid,
-but a 6.709% GCI is not a mesh-independent or industrial-accuracy claim; a
-project-specific error target and further refinement are still required.
+`clojure -M:dataset -m run-calculix-mesh-study` generates and executes four
+consistently refined C3D8 meshes for a 3D NLGEOM cantilever: 10, 80, 640 and
+5,120 elements. It hashes every generated INP and solver output, requires all
+real runs to complete, and evaluates rolling three-grid Richardson/GCI studies.
+Adding the 6,561-node level changes the mean tip response from `-1.779019` to
+`-1.824416`; the fine-side observed order rises from `1.3935` to `1.7751` and
+GCI falls from `6.709%` to `1.2839%`, a `5.225x` reduction that passes the
+declared 3% study target. This target applies only to this response and case;
+it is not a universal mesh-independent or industrial-accuracy claim.
 
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
