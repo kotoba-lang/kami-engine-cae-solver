@@ -247,6 +247,15 @@ GCI are undefined. The evidence run passes as a sensitivity audit while the
 local-pressure scope fails closed as `:local-pressure-not-qualified`. A correct
 total force must never be used to claim a converged local contact maximum.
 
+`clojure -M:dataset -m run-calculix-plastic-mesh-study` applies a controlled
+strain gradient to three bilinear-isotropic-hardening C3D8 meshes and parses
+every final PEEQ integration-point value. Maximum PEEQ increases monotonically
+from `0.0017421` through `0.0018330` to `0.0018788`; the observed order is
+`0.9899` and fine-grid GCI is `3.0886%`, below the declared 5% target. This
+qualifies maximum PEEQ only for this smooth gradient case. It does not cover
+notches, singularities, damage, fracture, another geometry, or an uncalibrated
+production material.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this
