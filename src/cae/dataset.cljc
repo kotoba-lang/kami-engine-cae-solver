@@ -38,8 +38,27 @@
 
 (defn immutable-download-urls [m]
   (let [m (audit-manifest m)
-        base (str "https://huggingface.co/datasets/" (:repository m) "/resolve/" (:revision m))]
+        base (case (:provider m)
+               :hugging-face (str "https://huggingface.co/datasets/" (:repository m) "/resolve/" (:revision m))
+               :github-raw (str "https://raw.githubusercontent.com/" (:repository m) "/" (:revision m))
+               (throw (ex-info "unsupported immutable dataset provider" {:provider (:provider m)})))]
     (mapv (fn [{:keys [path]}] {:path path :url (str base "/" path)}) (:files m))))
+
+(defn parse-nasa-ofi
+  "Parse NASA TMR smooth-body-separation Oil Film Interferometry text.
+  Returns the measured Cf and its per-sample absolute uncertainty e_Cf."
+  [text]
+  (let [number-pattern #"[-+]?\d+(?:\.\d+)?(?:[Ee][-+]?\d+)?"
+        rows (->> (str/split-lines text)
+                  (map str/trim)
+                  (filter #(re-matches (re-pattern (str "(?:" number-pattern "\\s+){6}" number-pattern)) %))
+                  (mapv (fn [line]
+                          (let [[x y z dx dz cf uncertainty] (mapv #(double #?(:clj (Double/parseDouble %) :cljs (js/parseFloat %)))
+                                                                   (re-seq number-pattern line))]
+                            {:x-mm x :y-mm y :z-mm z :dx-mm dx :dz-mm dz
+                             :skin-friction-coefficient cf :absolute-uncertainty uncertainty}))))]
+    {:format :nasa-tmr-ofi-v1 :quantity :skin-friction-coefficient
+     :uncertainty :per-sample-absolute :samples rows :sample-count (count rows)}))
 
 (defn verify-content
   "Compare independently calculated `{path {:sha256 ... :bytes ...}}` facts."

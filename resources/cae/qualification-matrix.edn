@@ -13,8 +13,18 @@
   :experimental-validation :missing
   :software-quality :reference-tested
   :release-status :not-release-qualified
-  :included [:conservative-interface-flux :transmissive-boundary]
+ :included [:conservative-interface-flux :transmissive-boundary]
   :excluded [:viscosity :turbulence :combustion :multidimensional-flow]}
+ {:scope/id :cfd/nasa-sbse-rans
+  :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump
+          :quantity :skin-friction-coefficient}
+  :numerical-verification :missing
+  :experimental-validation :data-qualified-prediction-missing
+  :validation-dataset "nasa-tmr-sbse-ofi"
+  :software-quality :not-implemented
+  :release-status :not-release-qualified
+  :included [:mach-0.05 :mach-0.1 :mach-0.2 :ofi-skin-friction]
+  :excluded [:unmeasured-conditions :other-geometries :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete

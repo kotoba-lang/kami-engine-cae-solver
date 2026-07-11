@@ -1,4 +1,26 @@
-[{:dataset/id "aethron-cfd-pinn"
+[{:dataset/id "nasa-tmr-sbse-ofi"
+  :provider :github-raw
+  :repository "TMBWG/turbmodels"
+  :revision "ddf1840b6e928d1de60d920cafe431ed476f36a1"
+  :license :cc0-1.0
+  :license-uri "https://github.com/TMBWG/turbmodels/blob/ddf1840b6e928d1de60d920cafe431ed476f36a1/LICENSE"
+  :domain :turbulent-separated-flow
+  :data-origin :experiment
+  :intended-use :experimental-validation
+  :commercial-use? true
+  :validation-role :independent
+  :validation-scope {:facility "NASA ND Mach 0.6 closed-loop wind tunnel"
+                     :geometry "36-inch smooth-body-separation bump"
+                     :quantity :skin-friction-coefficient
+                     :mach [0.05 0.1 0.2]}
+  :uncertainty {:type :per-sample-absolute :field :e_Cf :included-in-files true}
+  :parser :nasa-ofi
+  :citation "Williams et al., A New Validation Experiment for Smooth-Body Separation, AIAA 2021-2810"
+  :files [{:path "LICENSE" :sha256 "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499" :bytes 7048 :split :documentation}
+          {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp05.dat" :sha256 "b6a3540bc8f74533990457825e554fdea08e0f099e798fe98f5b884914bf72dc" :bytes 2591 :split :validation}
+          {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp1.dat" :sha256 "a1fba5e9bb4eb079ab86d62ff3923ef9dfec271ffbd07393cb2a51f7864beb01" :bytes 2669 :split :validation}
+          {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp2.dat" :sha256 "299c72ff1ecc7ea97f57bccc5bc4a55ed36a67ab7fb9d19590f40a744f9a1810" :bytes 2515 :split :test}]}
+ {:dataset/id "aethron-cfd-pinn"
   :provider :hugging-face
   :repository "AethronPhantom/CFD"
   :revision "b1f87f70d661dcd00bf88b0deaba77b804372d71"

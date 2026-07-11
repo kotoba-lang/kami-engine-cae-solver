@@ -1,5 +1,5 @@
-(ns verify-hf-dataset
-  "Download an immutable Hugging Face snapshot subset and verify every byte."
+(ns verify-external-dataset
+  "Download immutable external CAE evidence and verify every byte."
   (:require [cae.dataset :as dataset]
             [clojure.edn :as edn]
             [clojure.java.io :as io])
@@ -26,7 +26,7 @@
         request (-> (HttpRequest/newBuilder (URI/create url)) (.GET) (.build))
         response (.send client request (HttpResponse$BodyHandlers/ofFile (.toPath temporary)))]
     (when-not (= 200 (.statusCode response))
-      (throw (ex-info "Hugging Face download failed" {:url url :status (.statusCode response)})))
+      (throw (ex-info "external dataset download failed" {:url url :status (.statusCode response)})))
     (Files/move (.toPath temporary) (.toPath target)
                 (into-array StandardCopyOption [StandardCopyOption/REPLACE_EXISTING]))
     target))
@@ -46,4 +46,10 @@
         verified (dataset/verify-content audited observed)]
     (when-not (:content-verified? verified)
       (throw (ex-info "dataset content verification failed" {:checks (:content-checks verified)})))
+    (when (= :nasa-ofi (:parser verified))
+      (doseq [{:keys [path split]} (:files verified) :when (#{:validation :test} split)
+              :let [parsed (dataset/parse-nasa-ofi (slurp (io/file root path)))]]
+        (when-not (and (pos? (:sample-count parsed))
+                       (every? #(pos? (:absolute-uncertainty %)) (:samples parsed)))
+          (throw (ex-info "NASA OFI semantic verification failed" {:path path :parsed parsed})))))
     (prn (select-keys verified [:dataset/id :revision :license :status :content-checks]))))

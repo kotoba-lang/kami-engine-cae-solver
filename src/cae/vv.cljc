@@ -179,5 +179,29 @@
      :missing-pillars (mapv :pillar (remove :passed? pillar-checks))
      :applicability-defined? (boolean applicability?)}))
 
+(defn experimental-validation-check
+  "Uncertainty-aware comparison against independent measurements.
+  Passes only when normalized RMSE and the fraction inside the declared
+  uncertainty envelope both satisfy explicit acceptance limits."
+  [{:keys [predicted measured uncertainty normalized-rmse-limit minimum-coverage
+           coverage-factor dataset-id quantity]
+    :or {normalized-rmse-limit 1.0 minimum-coverage 0.95 coverage-factor 2.0}}]
+  (let [predicted (vec predicted) measured (vec measured) uncertainty (vec uncertainty)]
+    (when-not (and (pos? (count predicted)) (= (count predicted) (count measured) (count uncertainty))
+                   (every? finite? (concat predicted measured uncertainty)) (every? pos? uncertainty))
+      (throw (ex-info "experimental validation vectors must be equal, nonempty and uncertainty-positive"
+                      {:predicted (count predicted) :measured (count measured) :uncertainty (count uncertainty)})))
+    (let [normalized (mapv (fn [p m u] (/ (- (double p) (double m)) (double u)))
+                           predicted measured uncertainty)
+          nrmse (Math/sqrt (/ (reduce + (map #(* % %) normalized)) (count normalized)))
+          covered (count (filter #(<= (abs %) coverage-factor) normalized))
+          coverage (/ covered (double (count normalized)))
+          passed? (and (<= nrmse normalized-rmse-limit) (>= coverage minimum-coverage))]
+      {:check :experimental-validation :dataset-id dataset-id :quantity quantity
+       :samples (count normalized) :normalized-residuals normalized
+       :normalized-rmse nrmse :normalized-rmse-limit normalized-rmse-limit
+       :coverage coverage :minimum-coverage minimum-coverage :coverage-factor coverage-factor
+       :passed? passed? :status (if passed? :validated-for-declared-scope :validation-failed)})))
+
 (defmethod solver/solve :industrial-release-gate [case]
   (industrial-release-gate case))

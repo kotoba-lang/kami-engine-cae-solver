@@ -137,7 +137,7 @@ iterative residual.
 `resources/cae/datasets.edn` pins Hugging Face repositories to immutable
 40-character revisions and records license, origin, intended use, commercial
 permission, validation independence, citation, split, byte size and SHA-256.
-`clojure -M:dataset -m verify-hf-dataset aethron-cfd-pinn` downloads only the
+`clojure -M:dataset -m verify-external-dataset aethron-cfd-pinn` downloads only the
 manifested files and rejects any size/hash drift. CI executes this byte-level
 check on JDK 21.
 
@@ -155,6 +155,17 @@ verification, independent experimental validation and software quality for
 each applicability scope. `cae.vv/industrial-release-gate` requires all three,
 complete traceability, and explicit included/excluded conditions; numerical
 verification alone cannot produce an industrial release claim.
+
+The registry also pins the NASA/TMBWG Smooth-Body Separation Experiment OFI
+measurements at a fixed Git commit under CC0-1.0. CI verifies the repository
+license and three Mach-condition data files by SHA-256 and byte count, parses
+the measured skin-friction coefficient together with each sample's `e_Cf`
+uncertainty, and marks the dataset itself eligible for commercial independent
+validation. The corresponding RANS solver scope remains not release-qualified:
+qualified experimental data is now available, but this package does not yet
+produce a verified prediction for that geometry. `experimental-validation-check`
+performs normalized-RMSE and uncertainty-envelope coverage checks when such
+predictions become available.
 
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
