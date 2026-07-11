@@ -122,5 +122,9 @@ an inlet impulse, point load, heat/current source, contact force, crack-tip
 load, job injection, or mesh perturbation). Its position and decaying strength
 are part of the simulation state; the Sod scene additionally injects momentum
 and energy into the selected FVM cell before subsequent solver steps.
+The single-screen interface keeps scene navigation, the simulation viewport,
+controls, and response telemetry visible together. A dashed action boundary,
+crosshair, plain-language instruction, and pointer-following action ring make
+the interactive region perceivable without relying on color alone.
 If WebGPU is unavailable, the CAE report remains readable and reports the
 fallback state rather than pretending to render.

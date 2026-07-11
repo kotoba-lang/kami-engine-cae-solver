@@ -17,7 +17,9 @@ for (const contract of ["advance-simulation", "initial-simulation", "telemetry"]
 for (const contract of ["pointerdown", "pointermove", "pointer-action", "action-labels"]) {
   if (!cljs.includes(contract)) throw new Error(`missing interaction contract: ${contract}`);
 }
-if (!html.includes('id="kami-action-status"')) throw new Error("missing per-scene interaction status");
+for (const id of ["kami-action-status", "kami-action-title", "kami-action-cursor"]) {
+  if (!html.includes(`id="${id}"`)) throw new Error(`missing discoverable interaction UI: ${id}`);
+}
 if (!html.includes("./css/main.css") || !css.includes("build_pages_report")) {
   throw new Error("Hiccup/Shadow CSS report output is missing");
 }

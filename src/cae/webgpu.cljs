@@ -205,6 +205,8 @@
                reset-el (.getElementById js/document "kami-sim-reset")
                speed-el (.getElementById js/document "kami-sim-speed")
                action-el (.getElementById js/document "kami-action-status")
+               action-title-el (.getElementById js/document "kami-action-title")
+               action-cursor-el (.getElementById js/document "kami-action-cursor")
                context (.getContext canvas "webgpu")
                format (.getPreferredCanvasFormat (.-gpu js/navigator))
                shader (.createShaderModule device #js {:code shader-code})
@@ -222,9 +224,16 @@
                simulation (atom (initial-simulation)) last-time (atom nil)]
            (.addEventListener canvas "pointerdown"
              (fn [event] (.setPointerCapture canvas (.-pointerId event))
+               (let [rect (.getBoundingClientRect canvas)]
+                 (set! (.. action-cursor-el -style -left) (str (- (.-clientX event) (.-left rect)) "px"))
+                 (set! (.. action-cursor-el -style -top) (str (- (.-clientY event) (.-top rect)) "px"))
+                 (.add (.-classList action-cursor-el) "visible"))
                (swap! simulation apply-user-action @scene canvas event)))
            (.addEventListener canvas "pointermove"
              (fn [event] (when (pos? (bit-and (.-buttons event) 1))
+                           (let [rect (.getBoundingClientRect canvas)]
+                             (set! (.. action-cursor-el -style -left) (str (- (.-clientX event) (.-left rect)) "px"))
+                             (set! (.. action-cursor-el -style -top) (str (- (.-clientY event) (.-top rect)) "px")))
                            (swap! simulation apply-user-action @scene canvas event))))
            (.addEventListener canvas "pointerup"
              (fn [_] (swap! simulation assoc-in [:action :active?] false)))
@@ -232,8 +241,12 @@
              (.addEventListener button "click"
                (fn [_]
                  (reset! scene (js/Number (.. button -dataset -kamiScene)))
-                 (doseq [b (array-seq (.querySelectorAll js/document "[data-kami-scene]"))] (.toggle (.-classList b) "active" (= b button)))
+                 (doseq [b (array-seq (.querySelectorAll js/document "[data-kami-scene]"))]
+                   (.toggle (.-classList b) "active" (= b button))
+                   (.setAttribute b "aria-pressed" (if (= b button) "true" "false")))
                  (set! (.-textContent (.getElementById js/document "kami-scene-name")) (nth scene-labels @scene))
+                 (set! (.-textContent action-title-el) (nth action-labels @scene))
+                 (.remove (.-classList action-cursor-el) "visible")
                  (reset! simulation (initial-simulation)))))
            (.addEventListener toggle-el "click"
              (fn [_] (swap! simulation update :running? not)
@@ -267,7 +280,7 @@
                          (set! (.-textContent steps-el) (:steps @simulation))
                          (set! (.-textContent metric-el) (telemetry @scene @simulation))
                          (set! (.-textContent action-el)
-                           (str "Drag canvas: " (nth action-labels @scene) " · impulses " (get-in @simulation [:action :count])))
+                           (str "◎ Drag inside dashed area · " (nth action-labels @scene) " · " (get-in @simulation [:action :count]) " applied"))
                          (js/requestAnimationFrame render))))]
              (set! (.-textContent status) "ClojureScript direct WebGPU rendering active")
              (set! (.. status -dataset -state) "ok")
