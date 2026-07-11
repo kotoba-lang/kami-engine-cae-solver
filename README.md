@@ -119,6 +119,19 @@ commercial-fidelity claim. The Poiseuille and axial-bar analytic benchmarks
 now execute the actual `:cfd` and `:fem` solver paths instead of copying the
 analytic answer into the computed field.
 
+The `:axial-bar-fe` benchmark assembles and solves a real linear-element
+stiffness system for a sinusoidal distributed load. `:axial-bar-vv-study`
+runs 8/16/32-element meshes and derives analytic error, force equilibrium,
+algebraic residual reduction, observed order, Richardson extrapolation and
+GCI from those solver runs. This scope can pass as
+`:verified-for-declared-scope`; it does not qualify other FEM models.
+
+The compressible FVM update is expressed as the difference of shared Rusanov
+interface fluxes. Every run reports initial/final conserved quantities,
+integrated boundary outflow, conservation defect and time-step update norms.
+An explicit transient update norm is deliberately not mislabeled as an
+iterative residual.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this

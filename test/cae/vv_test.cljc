@@ -1,5 +1,6 @@
 (ns cae.vv-test
   (:require [clojure.test :refer [deftest is]]
+            [cae.solver :as solver]
             [cae.vv :as vv]))
 
 (def evidence {:case-id "bar-001" :solver "kotoba-fem" :solver-version "0.1.0"
@@ -40,3 +41,13 @@
 (deftest missing-traceability-never-passes
   (is (= [:mesh-id :executed-at :platform]
          (:missing (vv/evidence-check (dissoc evidence :mesh-id :executed-at :platform))))))
+
+(deftest actual-axial-fe-study-qualifies-only-its-declared-scope
+  (let [study (solver/solve {:solver {:kind :axial-bar-vv-study} :evidence evidence})]
+    (is (:passed? study))
+    (is (= :verified-for-declared-scope (:status study)))
+    (is (= [8 16 32] (get-in study [:study :element-counts])))
+    (is (every? :passed? (:checks study)))
+    (let [grid (first (filter #(= :grid-convergence (:check %)) (:checks study)))]
+      (is (< 1.9 (:observed-order grid) 2.1))
+      (is (< (:fine-grid-gci grid) 0.01)))))

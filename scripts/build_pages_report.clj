@@ -4,7 +4,7 @@
             [cae.advanced]
             [cae.high-fidelity]
             [cae.verification]
-            [cae.vv :as vv]
+            [cae.vv]
             [cae.solver :as solver]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
@@ -155,15 +155,12 @@
               {:domain "3D contact" :metric "Sliding" :value (:sliding? contact) :unit "boolean"}
               {:domain "Fracture" :metric "K/Kc utilization" :value (:utilization fracture) :unit "ratio"}
               {:domain "MPI" :metric "Halo messages" :value (:messages mpi) :unit "messages"}]
-        axial-benchmark (solver/solve {:solver {:kind :benchmark-suite} :case :axial-bar})
-        qualification (vv/qualification-gate
-                       {:scope {:physics :linear-elasticity :element :axial-bar}
-                        :checks [{:check :analytic-benchmark :passed? (:passed? axial-benchmark)
-                                  :result axial-benchmark}]
-                        :evidence {:case-id "pages-reference" :solver "kotoba-fem"
-                                   :solver-version "reference" :model-revision "github-pages"
-                                   :input-id "embedded" :mesh-id "not-supplied"
-                                   :executed-at "build-time" :platform "cljs/webgpu"}})
+        qualification (solver/solve
+                       {:solver {:kind :axial-bar-vv-study}
+                        :evidence {:case-id "axial-sine-001" :solver "kotoba-axial-fe"
+                                   :solver-version "reference-1" :model-revision "github-pages"
+                                   :input-id "embedded-sinusoidal-load" :mesh-id "family-8-16-32"
+                                   :executed-at "build-time" :platform "clj/pages-build"}})
         report {:runtime "ClojureScript / WebGPU" :solver-fidelity :realtime-reference
                 :status :screening-only :qualification qualification :metrics rows}
         report-json (json/write-str report)]
@@ -225,7 +222,9 @@
                      [:div {:class $card}
                       [:strong {:id "kami-qualification" :data-i18n "app/not-qualified"} "Not qualified"]
                       [:p {:data-i18n "app/qualification-help"}
-                       "Declared-scope V&V evidence is incomplete; no industrial accuracy claim."]]
+                       "The package has no general industrial accuracy claim."]
+                      [:small {:id "kami-qualified-scope" :data-i18n "app/qualified-scope"}
+                       "Verified scope: 1D linear axial FE / sinusoidal load"]]
                      [:details [:summary {:data-i18n "app/reference-metrics"} "Reference metrics"]
                       [:table {:class $table} [:tbody (map metric-row rows)]]]
                      [:pre {:class $evidence :hidden true} (pr-str report)]]]]

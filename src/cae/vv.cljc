@@ -88,3 +88,68 @@
 
 (defmethod solver/solve :qualification-gate [case]
   (qualification-gate case))
+
+(defn- tridiagonal-solve [a b c d]
+  (let [n (count d)
+        forward (loop [i 0 cp [] dp []]
+                  (if (= i n) [cp dp]
+                      (let [denom (- (nth b i) (if (zero? i) 0.0 (* (nth a (dec i)) (peek cp))))
+                            ci (if (= i (dec n)) 0.0 (/ (nth c i) denom))
+                            di (/ (- (nth d i) (if (zero? i) 0.0 (* (nth a (dec i)) (peek dp)))) denom)]
+                        (recur (inc i) (conj cp ci) (conj dp di)))))
+        [cp dp] forward]
+    (loop [i (dec n) x (vec (repeat n 0.0))]
+      (if (neg? i) x
+          (recur (dec i) (assoc x i (- (nth dp i) (* (nth cp i) (if (= i (dec n)) 0.0 (nth x (inc i)))))))))))
+
+(defmethod solver/solve :axial-bar-fe
+  [{:keys [elements length-m area-m2 youngs-modulus-Pa distributed-load-N-m]}]
+  (let [n (long elements) l (double length-m) area (double area-m2) e (double youngs-modulus-Pa)
+        q0 (double distributed-load-N-m)]
+    (when-not (and (>= n 4) (even? n) (every? pos? [l area e q0]))
+      (throw (ex-info "axial-bar FE requires even elements >=4 and positive properties" {:elements elements})))
+    (let [h (/ l n) stiffness (/ (* e area) h) unknowns (dec n)
+          loads (mapv (fn [i] (* h q0 (Math/sin (/ (* Math/PI i) n)))) (range 1 n))
+          interior (tridiagonal-solve (vec (repeat (dec unknowns) (- stiffness)))
+                                      (vec (repeat unknowns (* 2 stiffness)))
+                                      (vec (repeat (dec unknowns) (- stiffness))) loads)
+          u (vec (concat [0.0] interior [0.0]))
+          exact-scale (/ (* q0 l l) (* e area Math/PI Math/PI))
+          exact (mapv (fn [i] (* exact-scale (Math/sin (/ (* Math/PI i) n)))) (range (inc n)))
+          error (Math/sqrt (/ (reduce + (map (fn [a b] (let [d (- a b)] (* d d))) u exact)) (inc n)))
+          residuals (mapv (fn [i] (- (* stiffness (+ (* 2 (u i)) (- (u (dec i))) (- (u (inc i))))) (loads (dec i)))) (range 1 n))
+          rhs-norm (Math/sqrt (reduce + (map #(* % %) loads)))
+          residual-norm (Math/sqrt (reduce + (map #(* % %) residuals)))
+          reactions [(* (- stiffness) (u 1)) (* (- stiffness) (u (dec n)))]
+          applied (reduce + loads)]
+      {:solver :axial-bar-fe :model :linear-fe-sinusoidal-body-load :elements n :nodes (inc n)
+       :displacement-m u :midpoint-displacement-m (u (quot n 2)) :exact-midpoint-m exact-scale
+       :l2-error-m error :reaction-forces-N reactions :applied-load-N applied
+       :algebraic-residual-norm residual-norm :residual-history [rhs-norm residual-norm]
+       :fidelity :verification-benchmark :status :computed})))
+
+(defmethod solver/solve :axial-bar-vv-study
+  [{:keys [element-counts length-m area-m2 youngs-modulus-Pa distributed-load-N-m
+           gci-tolerance benchmark-tolerance evidence]}]
+  (let [counts (vec (or element-counts [8 16 32]))
+        base {:length-m (or length-m 1.0) :area-m2 (or area-m2 0.01)
+              :youngs-modulus-Pa (or youngs-modulus-Pa 2.0e11)
+              :distributed-load-N-m (or distributed-load-N-m 1.0e6)}
+        runs (mapv #(solver/solve (assoc base :solver {:kind :axial-bar-fe} :elements %)) counts)
+        [coarse medium fine] (mapv :midpoint-displacement-m runs) fine-run (peek runs)
+        reference (:exact-midpoint-m fine-run)
+        analytic {:check :analytic-benchmark :computed fine :reference reference
+                  :relative-error (relative-error fine reference)
+                  :tolerance (or benchmark-tolerance 0.01)
+                  :passed? (<= (relative-error fine reference) (or benchmark-tolerance 0.01))}
+        conservation (conservation-check {:quantity :force-equilibrium :inputs [(:applied-load-N fine-run)]
+                                          :outputs [(- (reduce + (:reaction-forces-N fine-run)))] :tolerance 1.0e-10})
+        residual (residual-check {:history (:residual-history fine-run) :absolute-tolerance 1.0e-6
+                                  :minimum-reduction 1.0e8})
+        grid (grid-convergence-check {:coarse coarse :medium medium :fine fine
+                                      :refinement-ratio 2.0 :gci-tolerance (or gci-tolerance 0.01)})
+        checks [analytic conservation residual grid]
+        gate (qualification-gate {:scope {:physics :linear-elasticity :dimension :1d
+                                          :element :linear-axial :loading :sinusoidal-body-force}
+                                  :checks checks :evidence evidence})]
+    (assoc gate :runs runs :study {:element-counts counts :quantity :midpoint-displacement-m})))

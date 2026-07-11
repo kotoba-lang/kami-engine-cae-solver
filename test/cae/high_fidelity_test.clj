@@ -10,6 +10,14 @@
     (is (> (:temperature-K r) 1000))
     (is (pos? (:reynolds-number b)))))
 
+(deftest fvm-is-interface-flux-conservative
+  (let [r (s/solve {:solver {:kind :fvm-compressible} :cells 32 :dx-m 0.01
+                    :dt-s 1.0e-5 :steps 10 :initial-condition :sod-shock-tube})
+        d (:diagnostics r)]
+    (is (every? #(< (abs %) 1.0e-12) (:conservation-defect d)))
+    (is (= 10 (count (:time-step-update-norm-history d))))
+    (is (every? pos? (:time-step-update-norm-history d)))))
+
 (deftest nonlinear-and-parallel-contracts
   (let [f (s/solve {:solver {:kind :friction-contact} :normal-force-N 100 :tangential-force-N 80 :friction-coefficient 0.5 :penalty-stiffness-N-m 1000})
         p (s/solve {:solver {:kind :fem-elastoplastic} :strain 0.01 :youngs-modulus-Pa 2e5 :yield-stress-Pa 100 :hardening-Pa 1000})
