@@ -124,6 +124,22 @@
     (is (:evidence-passed? study))
     (is (false? (:local-qualified? study)))))
 
+(deftest parses-plastic-field-and-qualifies-converged-maximum
+  (let [dat (str "total force (fx,fy,fz) for set TOP and time 1.0\n 0 0 50\n"
+                 "equivalent plastic strain (elem, integ.pnt.,pe)for set SPECIMEN and time 1.0\n"
+                 " 1 1 0.0\n 1 2 0.001\n\n")
+        parsed (evidence/calculix-plastic-field dat)
+        levels [{:h-relative 4.0 :value 0.001 :sample-count 8 :plastic-sample-count 4 :passed? true}
+                {:h-relative 2.0 :value 0.00175 :sample-count 32 :plastic-sample-count 16 :passed? true}
+                {:h-relative 1.0 :value 0.0019375 :sample-count 128 :plastic-sample-count 64 :passed? true}]
+        study (evidence/plastic-field-sensitivity {:levels levels :local-target 0.09})]
+    (is (= 2 (:sample-count parsed)))
+    (is (= 0.5 (:plastic-fraction parsed)))
+    (is (= 0.001 (:maximum-peeq parsed)))
+    (is (= 50.0 (:top-force-z parsed)))
+    (is (:evidence-passed? study))
+    (is (:local-qualified? study))))
+
 (def mpi-sample
   (str "KOTOBA_MPI_RANK rank=0 size=2 samples=5 partial=15.0\n"
        "KOTOBA_MPI_RANK rank=1 size=2 samples=5 partial=16.0\n"

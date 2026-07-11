@@ -107,3 +107,16 @@
     (is (= 18 (count (mapcat :files (:levels study)))))
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (mapcat :files (:levels study))))))
+
+(deftest committed-plastic-study-qualifies-maximum-peeq-for-declared-case
+  (let [fixture (fixture "cae/evidence/calculix-2.21-plastic-peeq-mesh-sensitivity.edn")
+        study (:study fixture)]
+    (is (= :external-plastic-sensitivity-verified (:status fixture)))
+    (is (true? (:local-qualified? study)))
+    (is (= :maximum-peeq-qualified (:qualification-status study)))
+    (is (apply < (map :maximum-peeq (:levels study))))
+    (is (< (get-in study [:local-study :fine-gci]) (:local-target study)))
+    (is (< 0.9 (get-in study [:local-study :observed-order]) 1.1))
+    (is (= 18 (count (mapcat :files (:levels study)))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (mapcat :files (:levels study))))))

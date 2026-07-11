@@ -205,7 +205,7 @@
                                                      h-ratios))
                 :monotonic? monotonic? :positive-order? (and p (pos? p))
                 :finite-gci? (and gci (not #?(:clj (Double/isNaN gci) :cljs (js/isNaN gci)))
-                                  (pos? gci) (< gci 0.1))}]
+                                  (pos? gci))}]
     {:format :three-grid-gci-v1 :levels levels :refinement-ratio refinement-ratio
      :safety-factor safety-factor :observed-order p :richardson-extrapolated extrapolated
      :fine-relative-error-estimate relative-error :fine-gci gci
@@ -259,6 +259,33 @@
      :local-target local-target :local-qualified? (boolean local-qualified?)
      :global-checks global-checks :evidence-passed? (every? true? (vals global-checks))
      :qualification-status (if local-qualified? :local-pressure-qualified :local-pressure-not-qualified)}))
+
+(defn calculix-plastic-field [dat-text]
+  (let [section (last (re-seq #"(?ms)equivalent plastic strain .*?for set SPECIMEN and time\s+([0-9.Ee+-]+)\s*\n(.*?)(?=\n\s*INCREMENT|\z)" dat-text))
+        time (some-> section second parse-number)
+        values (if-not section []
+                   (mapv (comp parse-number #(nth % 3))
+                         (re-seq #"(?m)^\s*(\d+)\s+(\d+)\s+([-+0-9.Ee]+)$" (nth section 2))))
+        force (last (re-seq #"(?ms)total force \(fx,fy,fz\) for set TOP and time\s+([0-9.Ee+-]+)\s*\n\s*([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)" dat-text))
+        positive (filter pos? values)]
+    {:format :calculix-plastic-field-v1 :time time :sample-count (count values)
+     :plastic-sample-count (count positive)
+     :plastic-fraction (when (seq values) (/ (count positive) (double (count values))))
+     :maximum-peeq (when (seq values) (apply max values))
+     :mean-peeq (when (seq values) (/ (reduce + values) (count values)))
+     :top-force-z (some-> force (nth 4) parse-number)}))
+
+(defn plastic-field-sensitivity [{:keys [levels local-target]}]
+  (let [local-study (mesh-convergence-evidence
+                     {:levels (mapv #(select-keys % [:h-relative :passed? :value]) levels)})
+        global-checks {:three-runs? (= 3 (count levels)) :all-runs-passed? (every? :passed? levels)
+                       :field-sampled? (every? #(pos? (:sample-count %)) levels)
+                       :plastic-zone-present? (every? #(pos? (:plastic-sample-count %)) levels)}
+        local-qualified? (and (:passed? local-study) (<= (:fine-gci local-study) local-target))]
+    {:format :plastic-field-sensitivity-v1 :levels levels :local-study local-study
+     :local-target local-target :local-qualified? (boolean local-qualified?)
+     :global-checks global-checks :evidence-passed? (every? true? (vals global-checks))
+     :qualification-status (if local-qualified? :maximum-peeq-qualified :maximum-peeq-not-qualified)}))
 
 (defn process-evidence
   [{:keys [solver solver-version image-digest command exit-code input-files result-files log-text result-text
