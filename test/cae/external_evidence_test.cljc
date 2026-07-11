@@ -21,3 +21,13 @@
     (is (= :external-process-verified (:status (evidence/process-evidence base))))
     (is (= :external-process-rejected (:status (evidence/process-evidence (assoc base :exit-code 1)))))
     (is (= :external-process-rejected (:status (evidence/process-evidence (assoc base :image-digest "latest")))))))
+
+(deftest parses-calculix-log-and-fixed-width-frd
+  (let [log (evidence/calculix-log "CalculiX Version 2.21\nJob finished\nTotal CalculiX Time: 0.012880\n")
+        frd (evidence/calculix-frd-displacements
+             " -4  DISP        4    1\n -1         5 4.0E-19-9.0E-19 1.00000E-03\n -3\n")]
+    (is (:complete? log))
+    (is (= "2.21" (:version log)))
+    (is (= 1 (:sample-count frd)))
+    (is (= 0.001 (:maximum-absolute-uz frd)))
+    (is (= 0.001 (:maximum-displacement frd)))))
