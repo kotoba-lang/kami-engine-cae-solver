@@ -81,3 +81,16 @@
     (is (= 18 (count (mapcat :files (:levels study)))))
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (mapcat :files (:levels study))))))
+
+(deftest committed-ultrafine-run-reduces-gci-below-declared-target
+  (let [fixture (fixture "cae/evidence/calculix-2.21-nlgeom-cantilever-four-level-gci.edn")
+        study (:study fixture) ultrafine (last (get-in study [:refined :levels]))]
+    (is (= :external-mesh-refinement-verified (:status fixture)))
+    (is (= 5120 (:elements ultrafine)))
+    (is (= 6561 (:nodes ultrafine)))
+    (is (< (get-in study [:refined :fine-gci]) (:target-gci study)))
+    (is (> (:gci-reduction-factor study) 5.0))
+    (is (> (get-in study [:refined :observed-order])
+           (get-in study [:baseline :observed-order])))
+    (is (= 6 (count (:files ultrafine))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %)) (:files ultrafine)))))

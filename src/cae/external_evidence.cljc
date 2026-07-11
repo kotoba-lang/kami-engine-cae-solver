@@ -196,15 +196,31 @@
         relative-error (when (and denominator (not (zero? denominator)) (not (zero? f3)))
                          (/ (abs (/ (- f3 f2) f3)) denominator))
         gci (when relative-error (* safety-factor relative-error))
+        h-values (mapv :h-relative levels)
+        h-ratios (mapv #(/ %1 %2) h-values (rest h-values))
         checks {:three-levels? (= 3 (count levels))
                 :all-runs-passed? (every? :passed? levels)
-                :consistent-refinement? (= [4.0 2.0 1.0] (mapv :h-relative levels))
+                :consistent-refinement? (and (= 2 (count h-ratios))
+                                             (every? #(< (abs (- % refinement-ratio)) 1.0e-12)
+                                                     h-ratios))
                 :monotonic? monotonic? :positive-order? (and p (pos? p))
                 :finite-gci? (and gci (not #?(:clj (Double/isNaN gci) :cljs (js/isNaN gci)))
                                   (pos? gci) (< gci 0.1))}]
     {:format :three-grid-gci-v1 :levels levels :refinement-ratio refinement-ratio
      :safety-factor safety-factor :observed-order p :richardson-extrapolated extrapolated
      :fine-relative-error-estimate relative-error :fine-gci gci
+     :checks checks :passed? (every? true? (vals checks))}))
+
+(defn mesh-refinement-improvement
+  [{:keys [baseline refined target-gci]}]
+  (let [checks {:baseline-passed? (:passed? baseline) :refined-passed? (:passed? refined)
+                :gci-reduced? (and (:fine-gci baseline) (:fine-gci refined)
+                                   (< (:fine-gci refined) (:fine-gci baseline)))
+                :target-gci-met? (and (:fine-gci refined) (<= (:fine-gci refined) target-gci))}]
+    {:format :rolling-three-grid-improvement-v1 :baseline baseline :refined refined
+     :target-gci target-gci
+     :gci-reduction-factor (when (and (:fine-gci baseline) (:fine-gci refined))
+                             (/ (:fine-gci baseline) (:fine-gci refined)))
      :checks checks :passed? (every? true? (vals checks))}))
 
 (defn process-evidence

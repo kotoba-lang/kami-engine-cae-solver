@@ -26,9 +26,10 @@
   (when (.exists file) (doseq [f (reverse (file-seq file))] (.delete f))))
 
 (def levels
-  [{:id :coarse :nx 10 :ny 1 :nz 1 :h-relative 4.0}
-   {:id :medium :nx 20 :ny 2 :nz 2 :h-relative 2.0}
-   {:id :fine :nx 40 :ny 4 :nz 4 :h-relative 1.0}])
+  [{:id :coarse :nx 10 :ny 1 :nz 1 :h-relative 8.0}
+   {:id :medium :nx 20 :ny 2 :nz 2 :h-relative 4.0}
+   {:id :fine :nx 40 :ny 4 :nz 4 :h-relative 2.0}
+   {:id :ultrafine :nx 80 :ny 8 :nz 8 :h-relative 1.0}])
 
 (defn- run-level [root image {:keys [id nx ny nz h-relative]}]
   (let [name (name id) level-root (io/file root name) _ (.mkdirs level-root)
@@ -61,13 +62,16 @@
         _ (when-not (and (zero? (:exit inspect)) (.contains (:output inspect) digest))
             (throw (ex-info "CalculiX container digest mismatch" {:expected digest :actual (:output inspect)})))
         run-levels (mapv #(run-level root image %) levels)
-        convergence (evidence/mesh-convergence-evidence {:levels run-levels})
-        envelope {:case-id "calculix-2.21-nlgeom-cantilever-three-grid-gci"
+        baseline (evidence/mesh-convergence-evidence {:levels (subvec run-levels 0 3)})
+        refined (evidence/mesh-convergence-evidence {:levels (subvec run-levels 1 4)})
+        improvement (evidence/mesh-refinement-improvement
+                     {:baseline baseline :refined refined :target-gci 0.03})
+        envelope {:case-id "calculix-2.21-nlgeom-cantilever-four-level-gci"
                   :solver :calculix :solver-version (:version manifest) :image-digest digest
                   :platform "linux/arm64-container" :executed-at (str (Instant/now))
-                  :study convergence :passed? (:passed? convergence)
-                  :status (if (:passed? convergence) :external-mesh-convergence-verified
-                              :external-mesh-convergence-rejected)}]
+                  :study improvement :passed? (:passed? improvement)
+                  :status (if (:passed? improvement) :external-mesh-refinement-verified
+                              :external-mesh-refinement-rejected)}]
     (when-not (:passed? envelope) (throw (ex-info "CalculiX mesh study rejected" envelope)))
     (spit (io/file root "evidence.edn") (pr-str envelope))
     (prn envelope)))

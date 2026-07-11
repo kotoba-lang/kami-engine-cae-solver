@@ -94,6 +94,17 @@
                                      {:h-relative 2.0 :value -2.0 :passed? true}
                                      {:h-relative 1.0 :value -1.5 :passed? true}]}))))))
 
+(deftest mesh-refinement-must-reduce-gci-and-meet-target
+  (let [baseline {:passed? true :fine-gci 0.06}
+        refined {:passed? true :fine-gci 0.012}
+        passed (evidence/mesh-refinement-improvement
+                {:baseline baseline :refined refined :target-gci 0.03})]
+    (is (:passed? passed))
+    (is (= 5.0 (:gci-reduction-factor passed)))
+    (is (false? (:passed? (evidence/mesh-refinement-improvement
+                           {:baseline baseline :refined (assoc refined :fine-gci 0.04)
+                            :target-gci 0.03}))))))
+
 (def mpi-sample
   (str "KOTOBA_MPI_RANK rank=0 size=2 samples=5 partial=15.0\n"
        "KOTOBA_MPI_RANK rank=1 size=2 samples=5 partial=16.0\n"
