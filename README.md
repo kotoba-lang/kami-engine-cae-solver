@@ -238,6 +238,15 @@ GCI falls from `6.709%` to `1.2839%`, a `5.225x` reduction that passes the
 declared 3% study target. This target applies only to this response and case;
 it is not a universal mesh-independent or industrial-accuracy claim.
 
+`clojure -M:dataset -m run-calculix-contact-mesh-study` executes three tilted
+surface-to-surface contact meshes and deliberately separates global equilibrium
+from local pressure qualification. All runs balance top reaction and integrated
+contact force to the printed precision, but maximum CSTR is `1850.36`,
+`1648.05`, then `1651.93`: the sequence is non-monotonic, so observed order and
+GCI are undefined. The evidence run passes as a sensitivity audit while the
+local-pressure scope fails closed as `:local-pressure-not-qualified`. A correct
+total force must never be used to claim a converged local contact maximum.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this

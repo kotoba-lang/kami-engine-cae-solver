@@ -105,6 +105,25 @@
                            {:baseline baseline :refined (assoc refined :fine-gci 0.04)
                             :target-gci 0.03}))))))
 
+(deftest parses-contact-pressure-and-separates-global-from-local-qualification
+  (let [dat (str "total force (fx,fy,fz) for set TOP and time 1.0\n 0 0 -20\n"
+                 "contact stress (slave element+face,press,tang1,tang2) for all contact elements and time 1.0\n"
+                 " 7 1 100 0 0\n 8 1 200 0 0\n\n"
+                 "statistics for slave set UPPER_BOTTOM, master set LOWER_TOP and time 1.0\n"
+                 "total surface force (fx,fy,fz) and moment about the origin (mx,my,mz)\n 0 0 20 0 0 0\n"
+                 "area, normal force (+ = tension) and shear force (size)\n 0.1 -20 0\n")
+        parsed (evidence/calculix-contact-pressure dat)
+        levels [{:h-relative 4.0 :value 200.0 :sample-count 2 :force-balance-relative-error 0.0 :passed? true}
+                {:h-relative 2.0 :value 150.0 :sample-count 4 :force-balance-relative-error 0.0 :passed? true}
+                {:h-relative 1.0 :value 155.0 :sample-count 8 :force-balance-relative-error 0.0 :passed? true}]
+        study (evidence/contact-pressure-sensitivity {:levels levels :local-target 0.05})]
+    (is (= 2 (:sample-count parsed)))
+    (is (= 200.0 (:maximum-pressure parsed)))
+    (is (= 200.0 (:area-average-pressure parsed)))
+    (is (zero? (:force-balance-relative-error parsed)))
+    (is (:evidence-passed? study))
+    (is (false? (:local-qualified? study)))))
+
 (def mpi-sample
   (str "KOTOBA_MPI_RANK rank=0 size=2 samples=5 partial=15.0\n"
        "KOTOBA_MPI_RANK rank=1 size=2 samples=5 partial=16.0\n"
