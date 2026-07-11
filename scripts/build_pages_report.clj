@@ -88,6 +88,9 @@
 (def scenes ["CFD" "FEM" "Process" "Materials" "EM" "Production" "Sod FVM"
              "RANS k–ε" "Adaptive Mesh" "Thermo-Mechanical" "EM FEM" "3D Contact"
              "Fracture" "MPI Halo" "Mesh Quality"])
+(def scene-i18n ["scene/cfd" "scene/fem" "scene/process" "scene/materials" "scene/em"
+                 "scene/production" "scene/fvm" "scene/rans" "scene/amr" "scene/thermo"
+                 "scene/em-fem" "scene/contact" "scene/fracture" "scene/mpi" "scene/quality"])
 
 (defn- metric-row [{:keys [domain metric value unit]}]
   [:tr [:td {:class $cell} domain] [:td {:class $cell} metric]
@@ -166,15 +169,20 @@
                  [:body {:class $body}
                   [:main {:class $app}
                    [:header {:class $toolbar}
-                    [:div {:class $brand} [:span {:class $traffic}] [:span "Kotoba CAE"] [:small "Realtime Lab"]]
-                    [:div {:class $ok} "● WebGPU / CLJS"]]
+                    [:div {:class $brand} [:span {:class $traffic}] [:span {:data-i18n "app/title"} "Kotoba CAE"]
+                     [:small {:data-i18n "app/lab"} "Realtime Lab"]]
+                    [:div {:class $controls}
+                     [:select {:id "kami-locale" :class $button :aria-label "Language"}
+                      [:option {:value "en"} "English"] [:option {:value "ja"} "日本語"]]
+                     [:div {:class $ok} "● WebGPU / CLJS"]]]
                    [:div {:class $workspace}
                     [:nav {:class (str $panel " " $sidebar) :aria-label "Physics scenes"}
-                     [:div {:class $section-label} "Physics"]
+                     [:div {:class $section-label :data-i18n "app/physics"} "Physics"]
                      (map-indexed (fn [i label]
                                     [:button {:class (str $scene-button (when (zero? i) " active"))
                                               :data-kami-scene i :aria-pressed (= i 0)}
-                                     [:span (if (< i 6) "●" "◇")] label]) scenes)]
+                                     [:span (if (< i 6) "●" "◇")]
+                                     [:span {:data-i18n (nth scene-i18n i)} label]]) scenes)]
                     [:section {:class $stage :aria-label "Interactive simulation viewport"}
                      [:canvas {:id "kami-webgpu-canvas" :class $canvas
                                :aria-label "Interactive ClojureScript WebGPU simulation. Click or drag inside the dashed area."}]
@@ -182,27 +190,27 @@
                      [:div {:class $crosshair}]
                      [:div {:id "kami-action-cursor" :class $action-cursor}]
                      [:div {:class $overlay}
-                      [:div {:id "kami-runtime-status"} "Loading WebGPU…"]
+                      [:div {:id "kami-runtime-status" :data-i18n "app/loading"} "Loading WebGPU…"]
                       [:div {:id "kami-scene-name"} "CFD · flow / combustion"]
                       [:div "Time " [:span {:id "kami-sim-time"} "0.00"] " s · " [:span {:id "kami-sim-steps"} "0"] " steps"]]
                      [:div {:id "kami-action-status" :class $action-label}
                       "◎ Drag inside dashed area to apply inlet impulse"]]
                     [:aside {:class (str $panel " " $inspector)}
-                     [:div {:class $section-label} "Interaction"]
+                     [:div {:class $section-label :data-i18n "app/interaction"} "Interaction"]
                      [:div {:class $card}
                       [:strong {:id "kami-action-title"} "Inlet impulse"]
-                      [:p "Click to apply. Drag to choose position and increase strength."]]
-                     [:div {:class $section-label} "Live response"]
+                      [:p {:data-i18n "app/click-help"} "Click to apply. Drag to choose position and increase strength."]]
+                     [:div {:class $section-label :data-i18n "app/live-response"} "Live response"]
                      [:div {:class $card} [:div {:id "kami-sim-metric" :class $metric} "Initializing simulation"]]
                      [:div {:class $controls}
-                      [:button {:id "kami-sim-toggle" :class $button} "Pause"]
-                      [:button {:id "kami-sim-reset" :class $button} "Reset"]
-                      [:label "Speed " [:select {:id "kami-sim-speed" :class $button :aria-label "Simulation speed"}
+                      [:button {:id "kami-sim-toggle" :class $button :data-i18n "app/pause"} "Pause"]
+                      [:button {:id "kami-sim-reset" :class $button :data-i18n "app/reset"} "Reset"]
+                      [:label [:span {:data-i18n "app/speed"} "Speed"] " " [:select {:id "kami-sim-speed" :class $button :aria-label "Simulation speed"}
                                          (for [speed [0.25 0.5 1 2 4]]
                                            [:option (cond-> {:value speed} (= speed 1) (assoc :selected true)) (str speed "×")])]]]
-                     [:div {:class $section-label} "Renderer"]
+                     [:div {:class $section-label :data-i18n "app/renderer"} "Renderer"]
                      [:div {:class $card} "Frames " [:span {:id "kami-cljs-frames"} "0"] " · Draws " [:span {:id "kami-webgpu-draws"} "0"]]
-                     [:details [:summary "Reference metrics"]
+                     [:details [:summary {:data-i18n "app/reference-metrics"} "Reference metrics"]
                       [:table {:class $table} [:tbody (map metric-row rows)]]]
                      [:pre {:class $evidence :hidden true} (pr-str report)]]]]
                   [:script (h/raw (str "window.__KAMI_CAE_METRICS__=" report-json ";"))]

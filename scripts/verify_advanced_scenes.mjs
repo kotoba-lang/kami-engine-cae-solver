@@ -14,7 +14,7 @@ for (const id of ["kami-sim-toggle", "kami-sim-reset", "kami-sim-speed", "kami-s
 for (const contract of ["advance-simulation", "initial-simulation", "telemetry"]) {
   if (!cljs.includes(contract)) throw new Error(`missing realtime CLJS contract: ${contract}`);
 }
-for (const contract of ["pointerdown", "pointermove", "pointer-action", "action-labels"]) {
+for (const contract of ["pointerdown", "pointermove", "pointer-action", "action-keys"]) {
   if (!cljs.includes(contract)) throw new Error(`missing interaction contract: ${contract}`);
 }
 for (const id of ["kami-action-status", "kami-action-title", "kami-action-cursor"]) {
@@ -22,6 +22,12 @@ for (const id of ["kami-action-status", "kami-action-title", "kami-action-cursor
 }
 if (!html.includes("./css/main.css") || !css.includes("build_pages_report")) {
   throw new Error("Hiccup/Shadow CSS report output is missing");
+}
+for (const contract of ["i18n.core", "embed-catalog", "set-locale!", "kami-cae-locale"]) {
+  if (!cljs.includes(contract)) throw new Error(`missing kotoba-lang/i18n contract: ${contract}`);
+}
+if (!html.includes('id="kami-locale"') || !html.includes('data-i18n="app/physics"')) {
+  throw new Error("missing locale switcher or translated Hiccup labels");
 }
 for (const metric of ["Sod FVM", "RANS k–ε", "Thermo-mechanical", "3D contact", "Fracture", "MPI"]) {
   if (!html.includes(metric)) throw new Error(`missing advanced metric: ${metric}`);

@@ -1,7 +1,22 @@
 (ns cae.webgpu
   "Browser renderer and real-time reference simulations, driven directly by CLJS."
   (:require [cae.high-fidelity]
-            [cae.solver :as solver]))
+            [cae.solver :as solver]
+            [i18n.core :as i18n]
+            [i18n.messages :refer [embed-catalog] :include-macros true]))
+
+(i18n/register! :en (embed-catalog "i18n/messages/en.edn"))
+(i18n/register! :ja (embed-catalog "i18n/messages/ja.edn"))
+
+(def scene-keys
+  [:scene/cfd :scene/fem :scene/process :scene/materials :scene/em :scene/production
+   :scene/fvm :scene/rans :scene/amr :scene/thermo :scene/em-fem :scene/contact
+   :scene/fracture :scene/mpi :scene/quality])
+
+(def action-keys
+  [:action/inlet :action/load :action/heat :action/nucleation :action/torque
+   :action/job :action/pressure :action/turbulence :action/refinement :action/thermal
+   :action/current :action/contact :action/crack :action/halo :action/mesh])
 
 (def scene-labels
   ["CFD · flow / combustion" "FEM · cantilever beam" "Process · weld / cast / roll"
@@ -14,11 +29,12 @@
   {:cyan [0.04 0.85 0.68] :blue [0.10 0.42 0.95] :orange [1.0 0.35 0.12]
    :gold [1.0 0.75 0.12] :purple [0.62 0.28 0.95] :white [0.75 0.88 0.95]})
 
-(def action-labels
-  ["inlet impulse" "point load" "heat-source placement" "nucleation energy"
-   "magnetic torque" "job injection" "pressure pulse" "turbulence injection"
-   "refinement target" "thermal load" "current source" "contact force"
-   "crack-tip load" "halo message" "mesh perturbation"])
+(defn- tr [k] (i18n/t k))
+
+(defn- localize-static! []
+  (set! (.-lang (.-documentElement js/document)) (name (i18n/locale)))
+  (doseq [el (array-seq (.querySelectorAll js/document "[data-i18n]"))]
+    (set! (.-textContent el) (tr (keyword (.. el -dataset -i18n))))))
 
 (defn- initial-fvm []
   (solver/solve {:solver {:kind :fvm-compressible} :cells 18 :dx-m 0.05
@@ -39,7 +55,7 @@
       sim)))
 
 (defn- telemetry [scene {:keys [time steps fvm action]}]
-  (let [wave (js/Math.sin (* time 2.0)) suffix (str " · " (nth action-labels scene) "=" (.toFixed (:strength action) 2))]
+  (let [wave (js/Math.sin (* time 2.0)) suffix (str " · " (tr (nth action-keys scene)) "=" (.toFixed (:strength action) 2))]
     (str
     (case scene
       0 (str "u=" (.toFixed (+ 1.4 (* 0.25 wave)) 2) " m/s · advective particles")
@@ -207,6 +223,7 @@
                action-el (.getElementById js/document "kami-action-status")
                action-title-el (.getElementById js/document "kami-action-title")
                action-cursor-el (.getElementById js/document "kami-action-cursor")
+               locale-el (.getElementById js/document "kami-locale")
                context (.getContext canvas "webgpu")
                format (.getPreferredCanvasFormat (.-gpu js/navigator))
                shader (.createShaderModule device #js {:code shader-code})
@@ -244,15 +261,23 @@
                  (doseq [b (array-seq (.querySelectorAll js/document "[data-kami-scene]"))]
                    (.toggle (.-classList b) "active" (= b button))
                    (.setAttribute b "aria-pressed" (if (= b button) "true" "false")))
-                 (set! (.-textContent (.getElementById js/document "kami-scene-name")) (nth scene-labels @scene))
-                 (set! (.-textContent action-title-el) (nth action-labels @scene))
+                 (set! (.-textContent (.getElementById js/document "kami-scene-name")) (tr (nth scene-keys @scene)))
+                 (set! (.-textContent action-title-el) (tr (nth action-keys @scene)))
                  (.remove (.-classList action-cursor-el) "visible")
                  (reset! simulation (initial-simulation)))))
            (.addEventListener toggle-el "click"
              (fn [_] (swap! simulation update :running? not)
-               (set! (.-textContent toggle-el) (if (:running? @simulation) "Pause" "Resume"))))
+               (set! (.-textContent toggle-el) (tr (if (:running? @simulation) :app/pause :app/resume)))))
            (.addEventListener reset-el "click" (fn [_] (reset! simulation (initial-simulation)) (reset! last-time nil)))
            (.addEventListener speed-el "change" (fn [_] (swap! simulation assoc :speed (js/Number (.-value speed-el)))))
+           (.addEventListener locale-el "change"
+             (fn [_]
+               (i18n/set-locale! (keyword (.-value locale-el)))
+               (.setItem js/localStorage "kami-cae-locale" (.-value locale-el))
+               (localize-static!)
+               (set! (.-textContent (.getElementById js/document "kami-scene-name")) (tr (nth scene-keys @scene)))
+               (set! (.-textContent action-title-el) (tr (nth action-keys @scene)))
+               (set! (.-textContent toggle-el) (tr (if (:running? @simulation) :app/pause :app/resume)))))
            (letfn [(render [time]
                      (let [rect (.getBoundingClientRect canvas) scale (min (or js/devicePixelRatio 1) 2)
                            width (max 1 (js/Math.floor (* (.-width rect) scale))) height (max 1 (js/Math.floor (* (.-height rect) scale)))
@@ -280,14 +305,21 @@
                          (set! (.-textContent steps-el) (:steps @simulation))
                          (set! (.-textContent metric-el) (telemetry @scene @simulation))
                          (set! (.-textContent action-el)
-                           (str "◎ Drag inside dashed area · " (nth action-labels @scene) " · " (get-in @simulation [:action :count]) " applied"))
+                           (i18n/t :app/drag-help {:action (tr (nth action-keys @scene))
+                                                  :count (get-in @simulation [:action :count])}))
                          (js/requestAnimationFrame render))))]
              (set! (.-textContent status) "ClojureScript direct WebGPU rendering active")
              (set! (.. status -dataset -state) "ok")
              (js/requestAnimationFrame render)))))))
 
 (defn init! []
-  (let [status (.getElementById js/document "kami-runtime-status") gpu (.-gpu js/navigator)]
+  (let [status (.getElementById js/document "kami-runtime-status") gpu (.-gpu js/navigator)
+        saved (.getItem js/localStorage "kami-cae-locale")
+        detected (if (.startsWith (or (.-language js/navigator) "en") "ja") "ja" "en")
+        locale (or saved detected)]
+    (i18n/set-locale! (keyword locale))
+    (set! (.-value (.getElementById js/document "kami-locale")) locale)
+    (localize-static!)
     (if-not gpu
       (do (set! (.-textContent status) "WebGPU unavailable; use a WebGPU-capable browser.") (set! (.. status -dataset -state) "fallback"))
       (-> (.requestAdapter gpu)
