@@ -77,6 +77,23 @@
     (is (false? (:passed? (evidence/calculix-plastic-checks
                            (assoc-in (assoc result :history-count 3) [:final :peeq] 0.0)))))))
 
+(deftest parses-tip-displacements-and-computes-three-grid-gci
+  (let [tip (evidence/calculix-tip-displacement
+             (str "displacements (vx,vy,vz) for set TIP and time 1.0\n\n"
+                  " 10 0 0 -1.0\n 11 0 0 -1.2\n"))
+        study (evidence/mesh-convergence-evidence
+               {:levels [{:h-relative 4.0 :value -1.0 :passed? true}
+                         {:h-relative 2.0 :value -1.75 :passed? true}
+                         {:h-relative 1.0 :value -1.9375 :passed? true}]})]
+    (is (= 2 (:node-count tip)))
+    (is (= -1.1 (:mean-uz tip)))
+    (is (= 2.0 (:observed-order study)))
+    (is (:passed? study))
+    (is (false? (:passed? (evidence/mesh-convergence-evidence
+                           {:levels [{:h-relative 4.0 :value -1.0 :passed? true}
+                                     {:h-relative 2.0 :value -2.0 :passed? true}
+                                     {:h-relative 1.0 :value -1.5 :passed? true}]}))))))
+
 (def mpi-sample
   (str "KOTOBA_MPI_RANK rank=0 size=2 samples=5 partial=15.0\n"
        "KOTOBA_MPI_RANK rank=1 size=2 samples=5 partial=16.0\n"
