@@ -117,5 +117,10 @@ steps the portable finite-volume kernel; the other scenes currently use
 stateful reduced-order/analytic dynamics and must not be read as commercial CAE
 validation results. The report DOM is generated from Hiccup2 and its minified,
 zero-runtime stylesheet is extracted by Shadow CSS.
+Clicking or dragging on the canvas applies a scene-specific action (for example
+an inlet impulse, point load, heat/current source, contact force, crack-tip
+load, job injection, or mesh perturbation). Its position and decaying strength
+are part of the simulation state; the Sod scene additionally injects momentum
+and energy into the selected FVM cell before subsequent solver steps.
 If WebGPU is unavailable, the CAE report remains readable and reports the
 fallback state rather than pretending to render.

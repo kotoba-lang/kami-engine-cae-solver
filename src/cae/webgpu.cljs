@@ -14,15 +14,23 @@
   {:cyan [0.04 0.85 0.68] :blue [0.10 0.42 0.95] :orange [1.0 0.35 0.12]
    :gold [1.0 0.75 0.12] :purple [0.62 0.28 0.95] :white [0.75 0.88 0.95]})
 
+(def action-labels
+  ["inlet impulse" "point load" "heat-source placement" "nucleation energy"
+   "magnetic torque" "job injection" "pressure pulse" "turbulence injection"
+   "refinement target" "thermal load" "current source" "contact force"
+   "crack-tip load" "halo message" "mesh perturbation"])
+
 (defn- initial-fvm []
   (solver/solve {:solver {:kind :fvm-compressible} :cells 18 :dx-m 0.05
                  :dt-s 1.0e-4 :steps 0 :initial-condition :sod-shock-tube}))
 
 (defn- initial-simulation []
-  {:time 0.0 :steps 0 :running? true :speed 1.0 :fvm (initial-fvm)})
+  {:time 0.0 :steps 0 :running? true :speed 1.0 :fvm (initial-fvm)
+   :action {:x 0.0 :y 0.0 :strength 0.0 :count 0 :active? false}})
 
 (defn- advance-simulation [sim scene dt]
-  (let [dt (* dt (:speed sim)) sim (-> sim (update :time + dt) (update :steps inc))]
+  (let [dt (* dt (:speed sim)) sim (-> sim (update :time + dt) (update :steps inc)
+                                       (update-in [:action :strength] #(max 0 (- % (* dt 0.16)))))]
     (if (= scene 6)
       (let [fvm (solver/solve {:solver {:kind :fvm-compressible} :cells 18 :dx-m 0.05
                                :dt-s (min 2.0e-4 (* dt 0.008)) :steps 1
@@ -30,8 +38,9 @@
         (assoc sim :fvm fvm))
       sim)))
 
-(defn- telemetry [scene {:keys [time steps fvm]}]
-  (let [wave (js/Math.sin (* time 2.0))]
+(defn- telemetry [scene {:keys [time steps fvm action]}]
+  (let [wave (js/Math.sin (* time 2.0)) suffix (str " · " (nth action-labels scene) "=" (.toFixed (:strength action) 2))]
+    (str
     (case scene
       0 (str "u=" (.toFixed (+ 1.4 (* 0.25 wave)) 2) " m/s · advective particles")
       1 (str "tip=" (.toFixed (* 6.0 wave) 2) " mm · damped mode")
@@ -48,7 +57,7 @@
       12 (str "K/Kc=" (.toFixed (+ 0.72 (* 0.28 (min 1 (/ time 8)))) 3) " · crack growth")
       13 (str "rank " (mod (quot steps 24) 4) " halo exchange · message " steps)
       14 (str "min V=" (.toFixed (+ 0.018 (* 0.004 wave)) 4) " m³ · quality monitor")
-      "reference simulation")))
+      "reference simulation") suffix)))
 
 (defn- push-vertex! [out [x y z] [r g b]]
   (swap! out into [x y z r g b]))
@@ -73,7 +82,8 @@
     (doseq [[p q r] [[a b c] [a c d] [a d b] [b d c]]] (triangle! out p q r color))))
 
 (defn- scene-geometry [kind time sim]
-  (let [v (atom []) c colors wave (js/Math.sin (* time 2.0))]
+  (let [v (atom []) c colors {:keys [x y strength]} (:action sim)
+        time (+ time (* strength 0.32)) wave (js/Math.sin (+ (* time 2.0) (* x strength)))]
     (case kind
       0 (do (cube! v 0 0 0 5.8 1.5 1.5 (:blue c))
             (doseq [i (range 6) :let [x (- (mod (+ (* i 1.05) (* time 1.4)) 6.0) 3.0)]]
@@ -128,7 +138,33 @@
                (tetra! v (+ -2.7 (* (mod i 5) 1.35)) (+ -0.5 (* (quot i 5) 1.35)) (- (* (mod i 2) 0.45) 0.2) (+ 0.42 (* (mod i 3) 0.08) (* wave 0.05)) (nth cs (mod i 5))))
              (triangle! v [-3 -1.45 -1.1] [3 -1.45 -1.1] [0 -1.45 2.2] (:white c)))
       nil)
+    (when (pos? strength)
+      (cube! v (* x 3.2) (* y 1.45) 1.45 (+ 0.12 (* strength 0.16))
+             (+ 0.12 (* strength 0.16)) (+ 0.12 (* strength 0.16)) (:gold c)))
     (js/Float32Array. (clj->js @v))))
+
+(defn- pointer-action [canvas event previous]
+  (let [rect (.getBoundingClientRect canvas)
+        x (- (* 2 (/ (- (.-clientX event) (.-left rect)) (.-width rect))) 1)
+        y (- 1 (* 2 (/ (- (.-clientY event) (.-top rect)) (.-height rect))))
+        distance (js/Math.hypot (- x (:x previous)) (- y (:y previous)))]
+    {:x (max -1 (min 1 x)) :y (max -1 (min 1 y))
+     :strength (min 3.0 (+ (:strength previous) 0.45 (* distance 2.2)))
+     :count (inc (:count previous)) :active? true}))
+
+(defn- apply-user-action [sim scene canvas event]
+  (let [action (pointer-action canvas event (:action sim))
+        sim (assoc sim :action action)]
+    (if (= scene 6)
+      (let [cell (min 17 (max 0 (js/Math.floor (* 18 (/ (inc (:x action)) 2)))))
+            impulse (* 0.025 (:strength action))]
+        (update-in sim [:fvm :state]
+          (fn [state]
+            (mapv (fn [i [rho momentum energy]]
+                    (if (= i cell) [rho (+ momentum impulse) (+ energy (* impulse 0.8))]
+                        [rho momentum energy]))
+                  (range) state))))
+      sim)))
 
 (defn- vsub [a b] (mapv - a b))
 (defn- dot [a b] (reduce + (map * a b)))
@@ -168,6 +204,7 @@
                toggle-el (.getElementById js/document "kami-sim-toggle")
                reset-el (.getElementById js/document "kami-sim-reset")
                speed-el (.getElementById js/document "kami-sim-speed")
+               action-el (.getElementById js/document "kami-action-status")
                context (.getContext canvas "webgpu")
                format (.getPreferredCanvasFormat (.-gpu js/navigator))
                shader (.createShaderModule device #js {:code shader-code})
@@ -183,6 +220,14 @@
                bind-group (.createBindGroup device #js {:layout (.getBindGroupLayout pipeline 0) :entries #js [#js {:binding 0 :resource #js {:buffer uniform}}]})
                scene (atom 0) geometry-count (atom 0) depth-view (atom nil) frames (atom 0) draws (atom 0)
                simulation (atom (initial-simulation)) last-time (atom nil)]
+           (.addEventListener canvas "pointerdown"
+             (fn [event] (.setPointerCapture canvas (.-pointerId event))
+               (swap! simulation apply-user-action @scene canvas event)))
+           (.addEventListener canvas "pointermove"
+             (fn [event] (when (pos? (bit-and (.-buttons event) 1))
+                           (swap! simulation apply-user-action @scene canvas event))))
+           (.addEventListener canvas "pointerup"
+             (fn [_] (swap! simulation assoc-in [:action :active?] false)))
            (doseq [button (array-seq (.querySelectorAll js/document "[data-kami-scene]"))]
              (.addEventListener button "click"
                (fn [_]
@@ -221,6 +266,8 @@
                          (set! (.-textContent time-el) (.toFixed (:time @simulation) 2))
                          (set! (.-textContent steps-el) (:steps @simulation))
                          (set! (.-textContent metric-el) (telemetry @scene @simulation))
+                         (set! (.-textContent action-el)
+                           (str "Drag canvas: " (nth action-labels @scene) " · impulses " (get-in @simulation [:action :count])))
                          (js/requestAnimationFrame render))))]
              (set! (.-textContent status) "ClojureScript direct WebGPU rendering active")
              (set! (.. status -dataset -state) "ok")
