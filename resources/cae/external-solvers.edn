@@ -1,0 +1,10 @@
+{:openfoam-v2506-arm64
+ {:solver :openfoam
+  :version "v2506"
+  :image "openeuler/openfoam@sha256:6f623ef0cedfff72771eb19db4e3d701bee92d8cf42dcead5f5ec49187564cea"
+  :image-digest "sha256:6f623ef0cedfff72771eb19db4e3d701bee92d8cf42dcead5f5ec49187564cea"
+  :architecture "arm64"
+  :source "https://hub.docker.com/r/openeuler/openfoam"
+  :case :icofoam-cavity
+  :tutorial "$FOAM_TUTORIALS/incompressible/icoFoam/cavity/cavity"
+  :commands ["blockMesh" "icoFoam"]}}

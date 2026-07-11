@@ -167,6 +167,22 @@ produce a verified prediction for that geometry. `experimental-validation-check`
 performs normalized-RMSE and uncertainty-envelope coverage checks when such
 predictions become available.
 
+## Real external solver execution
+
+`resources/cae/external-solvers.edn` pins OpenFOAM v2506 to an ARM64 OCI image
+digest. `clojure -M:dataset -m run-openfoam-evidence` copies the image's own
+`icoFoam/cavity` tutorial, hashes every input dictionary, executes the real
+`blockMesh` and `icoFoam` binaries, parses residual/Courant/continuity records,
+hashes the logs and final fields, verifies the local image digest, and emits an
+EDN evidence envelope. No shell command or unpinned image reference comes from
+the case payload.
+
+The committed run in `resources/cae/evidence` completed 100 time steps to
+`t=0.5` with maximum Courant number 0.852134 and final cumulative continuity
+error `-4.17776e-18`. This proves real process execution and traceability, not
+general OpenFOAM solution accuracy; its qualification-matrix scope explicitly
+excludes an accuracy or design-signoff claim.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this

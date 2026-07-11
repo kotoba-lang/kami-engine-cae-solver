@@ -13,8 +13,16 @@
   :experimental-validation :missing
   :software-quality :reference-tested
   :release-status :not-release-qualified
- :included [:conservative-interface-flux :transmissive-boundary]
+  :included [:conservative-interface-flux :transmissive-boundary]
   :excluded [:viscosity :turbulence :combustion :multidimensional-flow]}
+ {:scope/id :external/openfoam-icofoam-cavity
+  :scope {:solver :openfoam :version :v2506 :case :icofoam-cavity :platform :linux-arm64}
+  :numerical-verification :external-process-executed
+  :experimental-validation :not-applicable-to-execution-proof
+  :software-quality :digest-and-file-hash-evidence
+  :release-status :not-release-qualified
+  :included [:container-runtime :block-mesh :transient-incompressible-solve]
+  :excluded [:solution-accuracy-claim :turbulence :industrial-geometry :design-signoff]}
  {:scope/id :cfd/nasa-sbse-rans
   :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump
           :quantity :skin-friction-coefficient}

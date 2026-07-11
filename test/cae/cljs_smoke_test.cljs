@@ -12,6 +12,7 @@
             [cae.case-writer :as writer]
             [cae.result-reader :as reader]
             [cae.dataset :as dataset]
+            [cae.external-evidence :as external-evidence]
             [cae.host :as host]
             [cae.verification]
             [cae.vv :as vv]
@@ -78,6 +79,8 @@
                      :data-origin :synthetic :intended-use :training-only :commercial-use? true
                      :validation-role :same-class-synthetic :citation "smoke"
                      :files [{:path "x.csv" :sha256 (apply str (repeat 64 "a")) :bytes 1 :split :train}]})
+        external-log (external-evidence/openfoam-log
+                      "Time = 0.5\nCourant Number mean: 0.2 max: 0.8\nSolving for p, Initial residual = 1e-4, Final residual = 1e-7, No Iterations 2\ntime step continuity errors : sum local = 1e-8, global = 1e-19, cumulative = 1e-18\nEnd\n")
         vtk (reader/vtk-legacy {:text "# vtk DataFile Version 3.0\nASCII\nDATASET POLYDATA\nPOINTS 2 float\n0 0 0 1 0 0\nPOINT_DATA 2\nSCALARS p float\nLOOKUP_TABLE default\n1 2"})
         host-job (host/run-job (host/component-job {:source "solver.kotoba" :artifact "solver.wasm" :export "main"
                                                     :package-lock "lock.edn" :policy "policy.edn"
@@ -114,6 +117,7 @@
     (check! (= 2 (count (:rows table))) "CalculiX reader invalid" {:result table})
     (check! (= :metadata-verified (:status ds)) "dataset manifest invalid" {:result ds})
     (check! (= :metadata-audited (:status audited-ds)) "strict dataset manifest invalid" {:result audited-ds})
+    (check! (:complete? external-log) "external OpenFOAM log parser invalid" {:result external-log})
     (check! (= 2 (:point-count vtk)) "VTK reader invalid" {:result vtk})
     (check! (= :kototama-pending (:status host-job)) "Kotoba/kototama host contract invalid" {:result host-job})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))
