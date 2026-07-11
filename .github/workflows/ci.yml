@@ -44,5 +44,9 @@ jobs:
       - name: Run tests
         run: clojure -M:test
 
+      - name: Verify pinned Hugging Face dataset bytes
+        if: matrix.java == '21'
+        run: clojure -M:dataset -m verify-hf-dataset aethron-cfd-pinn
+
       - name: Lint
         run: clojure -M:lint

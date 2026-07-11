@@ -51,3 +51,18 @@
     (let [grid (first (filter #(= :grid-convergence (:check %)) (:checks study)))]
       (is (< 1.9 (:observed-order grid) 2.1))
       (is (< (:fine-grid-gci grid) 0.01)))))
+
+(deftest industrial-release-needs-verification-validation-and-software-quality
+  (let [base {:scope {:physics :linear-elasticity :dimension :1d}
+              :applicability {:included [:small-strain :linear-material]
+                              :excluded [:plasticity :contact :fracture]}
+              :evidence evidence
+              :numerical-verification {:passed? true}
+              :software-quality {:passed? true}}
+        rejected (vv/industrial-release-gate base)
+        passed (vv/industrial-release-gate
+                (assoc base :experimental-validation {:passed? true :dataset "independent-test"}))]
+    (is (= :not-release-qualified (:status rejected)))
+    (is (= [:experimental-validation] (:missing-pillars rejected)))
+    (is (= :release-qualified-for-declared-scope (:status passed)))
+    (is (= :declared-scope-industrial-use (:claim passed)))))

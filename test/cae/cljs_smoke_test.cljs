@@ -71,6 +71,13 @@
         field (reader/openfoam-field {:name "p" :text "internalField nonuniform List<scalar> 2 (101325 101300)"})
         table (reader/calculix-table {:name "U" :columns [:node :ux] :text "1 0.1\n2 0.2"})
         ds (dataset/verify-manifest (dataset/manifest {:id "fsi" :revision "abc" :license :mit :domain :fsi :files ["mesh.h5"]}))
+        audited-ds (dataset/audit-manifest
+                    {:dataset/id "smoke" :provider :hugging-face :repository "org/repo"
+                     :revision "0123456789abcdef0123456789abcdef01234567" :license :mit
+                     :license-uri "https://example.test/license" :domain :cfd
+                     :data-origin :synthetic :intended-use :training-only :commercial-use? true
+                     :validation-role :same-class-synthetic :citation "smoke"
+                     :files [{:path "x.csv" :sha256 (apply str (repeat 64 "a")) :bytes 1 :split :train}]})
         vtk (reader/vtk-legacy {:text "# vtk DataFile Version 3.0\nASCII\nDATASET POLYDATA\nPOINTS 2 float\n0 0 0 1 0 0\nPOINT_DATA 2\nSCALARS p float\nLOOKUP_TABLE default\n1 2"})
         host-job (host/run-job (host/component-job {:source "solver.kotoba" :artifact "solver.wasm" :export "main"
                                                     :package-lock "lock.edn" :policy "policy.edn"
@@ -106,6 +113,7 @@
     (check! (= 3 (count (:values field))) "OpenFOAM reader invalid" {:result field})
     (check! (= 2 (count (:rows table))) "CalculiX reader invalid" {:result table})
     (check! (= :metadata-verified (:status ds)) "dataset manifest invalid" {:result ds})
+    (check! (= :metadata-audited (:status audited-ds)) "strict dataset manifest invalid" {:result audited-ds})
     (check! (= 2 (:point-count vtk)) "VTK reader invalid" {:result vtk})
     (check! (= :kototama-pending (:status host-job)) "Kotoba/kototama host contract invalid" {:result host-job})
     (check! (= :openusd (get-in with-provenance [:case/provenance :source]))

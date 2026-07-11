@@ -153,3 +153,31 @@
                                           :element :linear-axial :loading :sinusoidal-body-force}
                                   :checks checks :evidence evidence})]
     (assoc gate :runs runs :study {:element-counts counts :quantity :midpoint-displacement-m})))
+
+(def release-pillars [:numerical-verification :experimental-validation :software-quality])
+
+(defn industrial-release-gate
+  "A stricter product-release gate. Numerical verification alone is never
+  sufficient: independent experimental validation and software QA evidence
+  must pass for the exact same declared applicability scope."
+  [{:keys [scope applicability evidence] :as case}]
+  (let [pillar-checks (mapv (fn [pillar]
+                              (let [result (get case pillar)]
+                                {:pillar pillar :result result
+                                 :passed? (and (map? result) (true? (:passed? result)))}))
+                            release-pillars)
+        traceability (evidence-check evidence)
+        applicability? (and (map? applicability)
+                            (seq (:included applicability))
+                            (seq (:excluded applicability)))
+        passed? (and (map? scope) (seq scope) applicability?
+                     (:passed? traceability) (every? :passed? pillar-checks))]
+    {:solver :industrial-release-gate :scope scope :applicability applicability
+     :pillars pillar-checks :traceability traceability :passed? passed?
+     :status (if passed? :release-qualified-for-declared-scope :not-release-qualified)
+     :claim (if passed? :declared-scope-industrial-use :no-industrial-release-claim)
+     :missing-pillars (mapv :pillar (remove :passed? pillar-checks))
+     :applicability-defined? (boolean applicability?)}))
+
+(defmethod solver/solve :industrial-release-gate [case]
+  (industrial-release-gate case))

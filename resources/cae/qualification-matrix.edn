@@ -1,0 +1,25 @@
+[{:scope/id :fem/axial-linear-1d
+  :scope {:physics :linear-elasticity :dimension :1d :element :linear-axial
+          :loading :sinusoidal-body-force}
+  :numerical-verification :passed
+  :experimental-validation :missing
+  :software-quality :reference-tested
+  :release-status :not-release-qualified
+  :included [:small-strain :linear-isotropic :fixed-fixed]
+  :excluded [:plasticity :contact :fracture :dynamics :temperature-dependence]}
+ {:scope/id :cfd/euler-rusanov-1d
+  :scope {:physics :compressible-euler :dimension :1d :flux :rusanov}
+  :numerical-verification :partial
+  :experimental-validation :missing
+  :software-quality :reference-tested
+  :release-status :not-release-qualified
+  :included [:conservative-interface-flux :transmissive-boundary]
+  :excluded [:viscosity :turbulence :combustion :multidimensional-flow]}
+ {:scope/id :package/general-industrial
+  :scope {:package :kami-engine-cae-solver}
+  :numerical-verification :incomplete
+  :experimental-validation :missing
+  :software-quality :development
+  :release-status :not-release-qualified
+  :included [:education :research :screening]
+  :excluded [:design-signoff :safety-critical-release :regulatory-submission]}]

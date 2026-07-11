@@ -132,6 +132,30 @@ integrated boundary outflow, conservation defect and time-step update norms.
 An explicit transient update norm is deliberately not mislabeled as an
 iterative residual.
 
+## Reproducible external datasets
+
+`resources/cae/datasets.edn` pins Hugging Face repositories to immutable
+40-character revisions and records license, origin, intended use, commercial
+permission, validation independence, citation, split, byte size and SHA-256.
+`clojure -M:dataset -m verify-hf-dataset aethron-cfd-pinn` downloads only the
+manifested files and rejects any size/hash drift. CI executes this byte-level
+check on JDK 21.
+
+Dataset provenance is not accuracy evidence by itself. `cae.dataset` rejects
+synthetic and simulation-only datasets as independent experimental validation,
+and rejects non-commercial licenses from a commercial qualification claim.
+The current registry includes pinned metadata for RealPDEBench, PDEBench 1D
+compressible flow, RAE2822 CFD and CMU SFEM. RealPDEBench contains paired real
+and simulated trajectories, but its CC-BY-NC-4.0 license makes it unsuitable
+for commercial qualification. The small pinned Aethron CFD CSV is downloaded
+in CI, but remains training-only synthetic data.
+
+`resources/cae/qualification-matrix.edn` separately tracks numerical
+verification, independent experimental validation and software quality for
+each applicability scope. `cae.vv/industrial-release-gate` requires all three,
+complete traceability, and explicit included/excluded conditions; numerical
+verification alone cannot produce an industrial release claim.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this

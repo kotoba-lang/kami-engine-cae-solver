@@ -1,0 +1,45 @@
+[{:dataset/id "aethron-cfd-pinn"
+  :provider :hugging-face
+  :repository "AethronPhantom/CFD"
+  :revision "b1f87f70d661dcd00bf88b0deaba77b804372d71"
+  :license :mit
+  :license-uri "https://huggingface.co/datasets/AethronPhantom/CFD/blob/b1f87f70d661dcd00bf88b0deaba77b804372d71/README.md"
+  :domain :cfd
+  :data-origin :synthetic
+  :intended-use :training-only
+  :commercial-use? true
+  :validation-role :same-class-synthetic
+  :citation "AethronPhantom, Navier-Stokes Simulated Flow Dataset for PINNs"
+  :files [{:path "README.md" :sha256 "d241e22742de1f4c7e6c81d61b18a66889b28f976b7455b7f6c7ca1463b411db" :bytes 5700 :split :documentation}
+          {:path "Flow.csv" :sha256 "42abf7055c3cf074376f1da391de7cd04c8e662ebefc6e79c7f421a1a99cdbbc" :bytes 2265767 :split :train}]}
+ {:dataset/id "realpdebench"
+  :provider :hugging-face :repository "AI4Science-WestlakeU/RealPDEBench"
+  :revision "2c72295abbc99f60333c66062449c9eb36db698e"
+  :license :cc-by-nc-4.0
+  :license-uri "https://creativecommons.org/licenses/by-nc/4.0/"
+  :domain :multiphysics :data-origin :experiment :intended-use :experimental-validation
+  :commercial-use? false :validation-role :independent
+  :citation "RealPDEBench: paired real and simulated PDE trajectories"
+  :uncertainty {:status :dataset-dependent}
+  :files []}
+ {:dataset/id "pdebench-1d-compressible"
+  :provider :hugging-face :repository "pdebench/1D-Compressible-Navier-Stokes"
+  :revision "a6d507e6b7369ad80bd2f0e4ebbdf169c2eda903"
+  :license :cc-by-4.0 :license-uri "https://creativecommons.org/licenses/by/4.0/"
+  :domain :compressible-cfd :data-origin :simulation :intended-use :verification-reference
+  :commercial-use? true :validation-role :external-simulation
+  :citation "PDEBench, 1D Compressible Navier-Stokes" :files []}
+ {:dataset/id "rae2822-cfd"
+  :provider :hugging-face :repository "giovannicatalani/RAE2822_Airfoil_Dataset"
+  :revision "6e710da7bbe4ba153194e5e984e8ee269fc3d337"
+  :license :apache-2.0 :license-uri "https://www.apache.org/licenses/LICENSE-2.0"
+  :domain :transonic-cfd :data-origin :simulation :intended-use :verification-reference
+  :commercial-use? true :validation-role :external-simulation
+  :citation "Catalani et al., Computers & Fluids 2022, doi:10.1016/j.compfluid.2022.105759" :files []}
+ {:dataset/id "sfem-3d"
+  :provider :hugging-face :repository "cmudrc/SFEM"
+  :revision "ab8239a2d9c2c2125402ea68c557c2c8b022ac86"
+  :license :mit :license-uri "https://opensource.org/license/mit"
+  :domain :structural-fem :data-origin :simulation :intended-use :training-only
+  :commercial-use? true :validation-role :external-simulation
+  :citation "CMU Design Research Collective, SFEM dataset" :files []}]
