@@ -6,6 +6,7 @@
   (:require [cae.assessment :as assessment]
             [cae.industrial]
             [cae.interchange :as interchange]
+            [cae.material-card :as material-card]
             [cae.high-fidelity]
             [cae.adapter]
             [cae.protocol :as protocol]
@@ -79,6 +80,20 @@
                      :data-origin :synthetic :intended-use :training-only :commercial-use? true
                      :validation-role :same-class-synthetic :citation "smoke"
                      :files [{:path "x.csv" :sha256 (apply str (repeat 64 "a")) :bytes 1 :split :train}]})
+        material-decision (material-card/usage-eligibility
+                           {:material/id "cljs-synthetic" :revision "1" :designation "Synthetic"
+                            :standard "NONE" :batch/lot "NONE" :supplier "test" :laboratory "test"
+                            :test-report "test" :source-uri "https://example.test/material"
+                            :source-sha256 (apply str (repeat 64 "a")) :license :mit :commercial-use? true
+                            :test-method "synthetic" :orientation :none :condition :synthetic
+                            :calibration {:procedure "reference" :version "1"}
+                            :properties {:youngs-modulus {:value 1.0 :unit :Pa}}
+                            :uncertainty {:youngs-modulus {:relative 0.0}}
+                            :validity {:temperature-K [293.0 294.0] :strain-rate-1-s [0.001 0.01]}
+                            :approval {:status :approved :approved-by "test" :valid-from "2026-01-01"
+                                       :valid-until "2027-01-01"}}
+                           {:temperature-K 293.15 :strain-rate-1-s 0.005 :commercial? true
+                            :analysis-date "2026-07-11"})
         external-log (external-evidence/openfoam-log
                       "Time = 0.5\nCourant Number mean: 0.2 max: 0.8\nSolving for p, Initial residual = 1e-4, Final residual = 1e-7, No Iterations 2\ntime step continuity errors : sum local = 1e-8, global = 1e-19, cumulative = 1e-18\nEnd\n")
         vtk (reader/vtk-legacy {:text "# vtk DataFile Version 3.0\nASCII\nDATASET POLYDATA\nPOINTS 2 float\n0 0 0 1 0 0\nPOINT_DATA 2\nSCALARS p float\nLOOKUP_TABLE default\n1 2"})
@@ -117,6 +132,7 @@
     (check! (= 2 (count (:rows table))) "CalculiX reader invalid" {:result table})
     (check! (= :metadata-verified (:status ds)) "dataset manifest invalid" {:result ds})
     (check! (= :metadata-audited (:status audited-ds)) "strict dataset manifest invalid" {:result audited-ds})
+    (check! (:eligible? material-decision) "material card applicability invalid" {:result material-decision})
     (check! (:complete? external-log) "external OpenFOAM log parser invalid" {:result external-log})
     (check! (= 2 (:point-count vtk)) "VTK reader invalid" {:result vtk})
     (check! (= :kototama-pending (:status host-job)) "Kotoba/kototama host contract invalid" {:result host-job})
