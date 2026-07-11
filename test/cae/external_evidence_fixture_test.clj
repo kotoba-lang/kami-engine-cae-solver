@@ -55,3 +55,16 @@
     (is (zero? (get-in fixture [:checks :force-balance-relative-error])))
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (concat (:input-files fixture) (:result-files fixture))))))
+
+(deftest committed-calculix-plastic-cycle-retains-residual-state
+  (let [fixture (fixture "cae/evidence/calculix-2.21-elastoplastic-load-unload.edn")]
+    (is (= :external-plastic-cycle-verified (:status fixture)))
+    (is (= 42 (get-in fixture [:result :converged-increments])))
+    (is (pos? (get-in fixture [:result :peak :peeq])))
+    (is (< (abs (get-in fixture [:result :final :top-force-z])) 1.0e-9))
+    (is (< (abs (get-in fixture [:result :final :stress-z])) 1.0e-9))
+    (is (pos? (get-in fixture [:result :final :top-displacement-z])))
+    (is (= (get-in fixture [:result :maximum-peeq])
+           (get-in fixture [:result :final :peeq])))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (concat (:input-files fixture) (:result-files fixture))))))

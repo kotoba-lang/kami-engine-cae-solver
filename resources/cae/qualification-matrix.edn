@@ -45,6 +45,18 @@
              :incremental-newton-raphson :reaction-contact-force-balance]
   :excluded [:friction :plasticity :hyperelasticity :self-contact :impact
              :mesh-convergence :experimental-validation :design-signoff]}
+ {:scope/id :external/calculix-elastoplastic-load-unload
+  :scope {:solver :calculix :version "2.21" :dimension :3d :element :c3d8
+          :material :bilinear-isotropic-hardening :constraint :uniaxial-strain}
+  :numerical-verification :load-cycle-and-residual-state-passed
+  :experimental-validation :missing
+  :software-quality :digest-and-file-hash-evidence
+  :release-status :not-release-qualified
+  :included [:von-mises-plasticity :isotropic-hardening :load-unload
+             :equivalent-plastic-strain :residual-deformation]
+  :excluded [:cyclic-calibration :kinematic-hardening :anisotropy :damage
+             :rate-dependence :temperature-dependence :experimental-validation
+             :design-signoff]}
  {:scope/id :cfd/nasa-sbse-rans
   :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump
           :quantity :skin-friction-coefficient}

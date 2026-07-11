@@ -217,6 +217,17 @@ relative balance error of zero. This verifies this frictionless elastic block
 case only; it does not validate friction, plasticity, self-contact, impact,
 mesh convergence, or general production assemblies.
 
+`clojure -M:dataset -m run-calculix-plastic-evidence` executes a material-
+nonlinear C3D8 load/unload cycle with bilinear isotropic hardening. The
+piecewise amplitude rises beyond yield and returns to zero; the parser joins 42
+DAT history snapshots and requires every increment to converge, positive PEEQ
+near mid-cycle, zero final axial load and stress, retained PEEQ, and nonzero
+residual elongation. The committed run reaches `PEEQ=2.02765e-4`, unloads to an
+axial force below `1e-15`, and retains `1.158657e-4` residual elongation. This
+is a constrained uniaxial-strain material verification, not calibration for a
+specific production alloy; cyclic hardening, anisotropy, damage, rate and
+temperature dependence still require independent material data and validation.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this
