@@ -68,6 +68,17 @@
              :richardson-extrapolation :grid-convergence-index :gci-below-3-percent]
   :excluded [:mesh-independent-claim :universal-error-target :contact :plasticity
              :experimental-validation :industrial-geometry :design-signoff]}
+ {:scope/id :external/calculix-contact-pressure-mesh-sensitivity
+  :scope {:solver :calculix :version "2.21" :dimension :3d :element :c3d8
+          :contact :tilted-surface-to-surface-penalty}
+  :numerical-verification :global-balance-passed-local-maximum-nonconvergent
+  :experimental-validation :missing
+  :software-quality :three-mesh-hash-evidence
+  :release-status :not-release-qualified
+  :included [:contact-force-balance :contact-area :area-average-pressure
+             :local-pressure-sensitivity-detection]
+  :excluded [:maximum-contact-pressure-claim :local-gci :mesh-independent-contact
+             :friction :experimental-validation :design-signoff]}
  {:scope/id :cfd/nasa-sbse-rans
   :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump
           :quantity :skin-friction-coefficient}

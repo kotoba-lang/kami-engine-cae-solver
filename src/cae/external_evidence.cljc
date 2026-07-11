@@ -223,6 +223,43 @@
                              (/ (:fine-gci baseline) (:fine-gci refined)))
      :checks checks :passed? (every? true? (vals checks))}))
 
+(defn calculix-contact-pressure [dat-text]
+  (let [section (last (re-seq #"(?ms)contact stress .*? and time\s+([0-9.Ee+-]+)\s*\n(.*?)\n\s*\n\s*statistics for slave set UPPER_BOTTOM" dat-text))
+        time (some-> section second parse-number)
+        pressures (if-not section []
+                      (mapv (comp parse-number #(nth % 3))
+                            (re-seq #"(?m)^\s*(\d+)\s+(\d+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)$"
+                                    (nth section 2))))
+        stats (last (re-seq #"(?ms)statistics for slave set UPPER_BOTTOM, master set LOWER_TOP and time\s+([0-9.Ee+-]+).*?total surface force.*?\n\s*([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+).*?area,\s+normal force.*?\n\s*([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)" dat-text))
+        top (last (re-seq #"(?ms)total force \(fx,fy,fz\) for set TOP and time\s+([0-9.Ee+-]+)\s*\n\s*([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)" dat-text))
+        contact-force-z (some-> stats (nth 4) parse-number)
+        area (some-> stats (nth 5) parse-number)
+        normal-force (some-> stats (nth 6) parse-number)
+        top-force-z (some-> top (nth 4) parse-number)
+        balance (when (and contact-force-z top-force-z (pos? (max (abs contact-force-z) (abs top-force-z))))
+                  (/ (abs (- (abs contact-force-z) (abs top-force-z)))
+                     (max (abs contact-force-z) (abs top-force-z))))]
+    {:format :calculix-contact-pressure-v1 :time time :sample-count (count pressures)
+     :minimum-pressure (when (seq pressures) (apply min pressures))
+     :maximum-pressure (when (seq pressures) (apply max pressures))
+     :mean-sampled-pressure (when (seq pressures) (/ (reduce + pressures) (count pressures)))
+     :contact-area area :normal-force normal-force
+     :area-average-pressure (when (and area normal-force (pos? area)) (/ (abs normal-force) area))
+     :surface-force-z contact-force-z :top-force-z top-force-z :force-balance-relative-error balance}))
+
+(defn contact-pressure-sensitivity [{:keys [levels local-target]}]
+  (let [local-study (mesh-convergence-evidence
+                     {:levels (mapv #(select-keys % [:h-relative :passed? :value]) levels)})
+        balances (mapv :force-balance-relative-error levels)
+        global-checks {:three-runs? (= 3 (count levels)) :all-runs-passed? (every? :passed? levels)
+                       :contact-sampled? (every? #(pos? (:sample-count %)) levels)
+                       :force-balanced? (every? #(and (number? %) (< % 1.0e-6)) balances)}
+        local-qualified? (and (:passed? local-study) (<= (:fine-gci local-study) local-target))]
+    {:format :contact-pressure-sensitivity-v1 :levels levels :local-study local-study
+     :local-target local-target :local-qualified? (boolean local-qualified?)
+     :global-checks global-checks :evidence-passed? (every? true? (vals global-checks))
+     :qualification-status (if local-qualified? :local-pressure-qualified :local-pressure-not-qualified)}))
+
 (defn process-evidence
   [{:keys [solver solver-version image-digest command exit-code input-files result-files log-text result-text
            platform executed-at case-id]}]

@@ -94,3 +94,16 @@
            (get-in study [:baseline :observed-order])))
     (is (= 6 (count (:files ultrafine))))
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %)) (:files ultrafine)))))
+
+(deftest committed-contact-study-rejects-nonmonotonic-local-pressure
+  (let [fixture (fixture "cae/evidence/calculix-2.21-contact-pressure-mesh-sensitivity.edn")
+        study (:study fixture)]
+    (is (= :external-contact-sensitivity-verified (:status fixture)))
+    (is (true? (:evidence-passed? study)))
+    (is (false? (:local-qualified? study)))
+    (is (= :local-pressure-not-qualified (:qualification-status study)))
+    (is (= [1850.362 1648.054 1651.934] (mapv :maximum-pressure (:levels study))))
+    (is (every? zero? (map :force-balance-relative-error (:levels study))))
+    (is (= 18 (count (mapcat :files (:levels study)))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (mapcat :files (:levels study))))))
