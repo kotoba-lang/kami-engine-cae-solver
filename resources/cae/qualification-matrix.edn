@@ -111,6 +111,16 @@
              :two-run-bitwise-output-repeatability]
   :excluded [:multi-node-network :fault-tolerance :strong-scaling :weak-scaling
              :production-cfd :production-fem :design-signoff]}
+ {:scope/id :materials/traceable-card-v1
+  :scope {:contract :material-card :version 1}
+  :numerical-verification :not-applicable-to-metadata-contract
+  :experimental-validation :fixture-is-synthetic
+  :software-quality :portable-fail-closed-validation-tested
+  :release-status :not-release-qualified
+  :included [:identity :lot :source-hash :license :explicit-si-units :uncertainty
+             :temperature-range :strain-rate-range :calibration :approval-validity]
+  :excluded [:physical-property-validation :production-material-release
+             :regulatory-approval :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete
