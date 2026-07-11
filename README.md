@@ -106,10 +106,10 @@ promoting its fidelity.
 
 ## GitHub Pages WebGPU view
 
-The Pages report adds a live Kami Engine surface above the CAE metrics. Its
-workflow fetches pinned `kami-clj` WASM and Kami UI SDK assets from
-`kotoba-lang/kami-engine`, verifies their import contract, then deploys them
-with a browser-native WebGPU renderer. On a WebGPU-capable browser, the overlay
-shows **Kami Engine · WebGPU + WASM**, increasing WASM ticks and draw calls. If
-WebGPU is unavailable, the CAE report remains readable and reports the fallback
-state rather than pretending to render.
+The Pages report compiles `cae.webgpu` from ClojureScript and drives the browser
+WebGPU API directly through CLJS-to-JavaScript interop. Scene selection, GPU
+buffers, WGSL pipelines, render passes, frames, and draw counters no longer
+cross a per-frame Wasm host boundary. Wasm remains an appropriate optional
+backend for large solver hot loops, but is not loaded for UI/render dispatch.
+If WebGPU is unavailable, the CAE report remains readable and reports the
+fallback state rather than pretending to render.
