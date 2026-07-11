@@ -14,6 +14,7 @@
             [cae.dataset :as dataset]
             [cae.host :as host]
             [cae.verification]
+            [cae.vv :as vv]
             [cae.orchestration :as orchestration]
             [cae.solver :as solver]
             [cae.study :as study]))
@@ -62,6 +63,7 @@
         validation (solver/solve {:solver {:kind :validation-report} :report-id "cljs-nightly" :checks [benchmark {:passed? true}]})
         balance (solver/solve {:solver {:kind :mpi-load-balance} :weights [1.0 1.0 8.0 1.0 1.0] :ranks 2})
         experiment (solver/solve {:solver {:kind :experimental-comparison} :dataset :wind-tunnel :predicted [1.0 2.0] :measured [1.0 2.0] :tolerance 1.0e-6})
+        conservation (vv/conservation-check {:quantity :mass :inputs [1.0] :outputs [1.0]})
         mpi-message (protocol/mpi-message {:source 0 :target 1 :tag :halo :payload [1 2]})
         job (protocol/validate-job (protocol/job-spec {:executable "kotoba-worker" :arguments ["--case" "x"] :ranks 2 :threads 4}))
         of-case (writer/openfoam-case {:control {:application "simpleFoam"} :transport {:kinematic-viscosity 1e-5}})
@@ -88,6 +90,7 @@
     (check! (= :passed (:status assessment)) "assessment did not pass" {:assessment assessment})
     (check! (= [:succeeded :failed] (mapv :status batch)) "batch isolation invalid" {:batch batch})
     (check! (pos? (:derivative sensitivity)) "CFD sensitivity direction invalid" {:sensitivity sensitivity})
+    (check! (:passed? conservation) "CLJS conservation V&V failed" {:check conservation})
     (check! (= 8 (:cells fvm)) "FVM Sod dispatch invalid" {:result fvm})
     (check! (= 4 (:cells rans)) "RANS dispatch invalid" {:result rans})
     (check! (pos? (get-in matdb [:properties :dynamic-viscosity-Pa-s])) "fluid material invalid" {:result matdb})
