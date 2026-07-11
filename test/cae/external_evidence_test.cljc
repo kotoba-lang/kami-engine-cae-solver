@@ -55,6 +55,28 @@
     (is (:passed? (evidence/calculix-contact-checks result)))
     (is (false? (:passed? (evidence/calculix-contact-checks (assoc result :nlgeom? false)))))))
 
+(defn plastic-snapshot [time displacement force stress peeq]
+  (str "displacements (vx,vy,vz) for set TOP and time " time "\n 8 0 0 " displacement "\n"
+       "total force (fx,fy,fz) for set TOP and time " time "\n 0 0 " force "\n"
+       "stresses (elem, integ.pnt.,sxx,syy,szz,sxy,sxz,syz) for set SPECIMEN and time " time
+       "\n 1 1 0 0 " stress " 0 0 0\n"
+       "equivalent plastic strain (elem, integ.pnt.,pe)for set SPECIMEN and time " time
+       "\n 1 1 " peeq "\n"))
+
+(deftest parses-and-fail-closes-plastic-cycle
+  (let [log (str "Nonlinear material laws are taken into account\n"
+                 " increment 1 attempt 1 \n convergence\n"
+                 " increment 2 attempt 1 \n convergence\nJob finished\n")
+        dat (str (plastic-snapshot "0.5" "0.002" "300" "300" "0.001")
+                 (plastic-snapshot "1.0" "0.0005" "0" "0" "0.001"))
+        result (evidence/calculix-plastic-result
+                {:log-text log :dat-text dat :sta-text " 1 2 1 2 1.0 1.0 0.5\n"})]
+    (is (= 2 (:history-count result)))
+    (is (= 0.001 (:maximum-peeq result)))
+    (is (:passed? (evidence/calculix-plastic-checks (assoc result :history-count 3))))
+    (is (false? (:passed? (evidence/calculix-plastic-checks
+                           (assoc-in (assoc result :history-count 3) [:final :peeq] 0.0)))))))
+
 (def mpi-sample
   (str "KOTOBA_MPI_RANK rank=0 size=2 samples=5 partial=15.0\n"
        "KOTOBA_MPI_RANK rank=1 size=2 samples=5 partial=16.0\n"

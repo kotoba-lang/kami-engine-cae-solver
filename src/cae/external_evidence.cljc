@@ -108,6 +108,63 @@
         booleans (dissoc checks :force-balance-relative-error :force-balance-tolerance)]
     {:checks checks :passed? (every? true? (vals booleans))}))
 
+(defn calculix-plastic-result
+  "Parse the load history and material state from a one-element CalculiX
+  elastoplastic load/unload DAT, STA and solver log."
+  [{:keys [log-text dat-text sta-text]}]
+  (let [n #"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?"
+        pattern (fn [s] (re-pattern s))
+        indexed (fn [matches value-fn]
+                  (reduce (fn [m row] (assoc m (parse-number (second row)) (value-fn row))) {} matches))
+        displacements (indexed
+                       (re-seq (pattern (str "(?ms)displacements \\(vx,vy,vz\\) for set TOP and time\\s+(" n ")"
+                                                ".*?\\n\\s*8\\s+(" n ")\\s+(" n ")\\s+(" n ")")) dat-text)
+                       #(parse-number (nth % 4)))
+        forces (indexed
+                (re-seq (pattern (str "(?ms)total force \\(fx,fy,fz\\) for set TOP and time\\s+(" n ")"
+                                         "\\s*\\n\\s*(" n ")\\s+(" n ")\\s+(" n ")")) dat-text)
+                #(parse-number (nth % 4)))
+        stresses (indexed
+                  (re-seq (pattern (str "(?ms)stresses .*? for set SPECIMEN and time\\s+(" n ")"
+                                           ".*?\\n\\s*1\\s+1\\s+(" n ")\\s+(" n ")\\s+(" n ")")) dat-text)
+                  #(parse-number (nth % 4)))
+        peeq (indexed
+              (re-seq (pattern (str "(?ms)equivalent plastic strain .*?for set SPECIMEN and time\\s+(" n ")"
+                                     ".*?\\n\\s*1\\s+1\\s+(" n ")")) dat-text)
+              #(parse-number (nth % 2)))
+        times (sort (keys forces))
+        history (mapv (fn [time] {:time time :top-force-z (forces time)
+                                  :top-displacement-z (displacements time)
+                                  :stress-z (stresses time) :peeq (peeq time)}) times)
+        peak (when (seq history) (apply max-key #(abs (:top-force-z %)) history))
+        final (peek history)
+        increments (count (re-seq #"(?m)^ increment \d+ attempt \d+" log-text))
+        converged (count (re-seq #"(?m)^ convergence(?:;|$)" log-text))
+        final-time (some->> (re-seq (pattern (str "(?m)^\\s*1\\s+\\d+\\s+\\d+\\s+\\d+\\s+(" n ")\\s+(" n ")")) sta-text)
+                            last second parse-number)]
+    {:format :calculix-plastic-cycle-v1
+     :material-nonlinear? (boolean (re-find #"Nonlinear material laws are taken into account" log-text))
+     :job-finished? (boolean (re-find #"Job finished" log-text))
+     :increments increments :converged-increments converged :final-time final-time
+     :history-count (count history) :peak peak :final final
+     :maximum-peeq (when (seq history) (apply max (map :peeq history)))}))
+
+(defn calculix-plastic-checks [result]
+  (let [peak (:peak result) final (:final result)
+        checks {:job-finished? (:job-finished? result)
+                :material-nonlinear? (:material-nonlinear? result)
+                :final-time? (= 1.0 (:final-time result))
+                :all-increments-converged? (= (:increments result) (:converged-increments result))
+                :load-cycle-sampled? (> (:history-count result) 2)
+                :peak-near-midcycle? (and peak (< 0.45 (:time peak) 0.55))
+                :yield-exceeded? (and peak (> (:top-force-z peak) 250.0) (pos? (:peeq peak)))
+                :unloaded? (and final (< (abs (:top-force-z final)) 1.0e-9)
+                                (< (abs (:stress-z final)) 1.0e-9))
+                :residual-deformation? (and final (> (:top-displacement-z final) 1.0e-5))
+                :plastic-strain-retained? (and final (pos? (:peeq final))
+                                                (= (:maximum-peeq result) (:peeq final)))}]
+    {:checks checks :passed? (every? true? (vals checks))}))
+
 (defn process-evidence
   [{:keys [solver solver-version image-digest command exit-code input-files result-files log-text result-text
            platform executed-at case-id]}]
