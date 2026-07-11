@@ -205,6 +205,18 @@ absolute error of about `1.10e-13`. This proves single-container multi-process
 execution only; multi-node networking, scaling efficiency, failure recovery,
 and production CFD/FEM decomposition remain outside the qualified scope.
 
+`clojure -M:dataset -m run-calculix-contact-evidence` executes a separate 3D
+geometrically nonlinear contact case. Two C3D8 blocks start with a gap; a
+prescribed `-0.2` displacement closes it and compresses the pair using
+surface-to-surface penalty contact. The evidence parser requires every one of
+the 22 load increments to converge, a nonzero final contact set, compressive
+normal force, completed NLGEOM output, and reaction/contact-force equilibrium.
+The committed CalculiX 2.21 run activates 28 contact elements and reports
+12,377.43 units of opposing contact force and top reaction, for a parsed
+relative balance error of zero. This verifies this frictionless elastic block
+case only; it does not validate friction, plasticity, self-contact, impact,
+mesh convergence, or general production assemblies.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this
