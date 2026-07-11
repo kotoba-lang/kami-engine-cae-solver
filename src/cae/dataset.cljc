@@ -14,6 +14,10 @@
 (def ^:private revision-pattern #"^[0-9a-f]{40}$")
 (def ^:private validation-usages #{:verification-reference :experimental-validation})
 
+(defn- finite-number? [x]
+  (and (number? x) #?(:clj (Double/isFinite (double x))
+                      :cljs (js/Number.isFinite x))))
+
 (defn audit-manifest
   "Strict v2 audit for immutable, license-aware external CAE evidence.
   This verifies metadata declarations only; use `verify-content` with hashes
@@ -41,8 +45,71 @@
         base (case (:provider m)
                :hugging-face (str "https://huggingface.co/datasets/" (:repository m) "/resolve/" (:revision m))
                :github-raw (str "https://raw.githubusercontent.com/" (:repository m) "/" (:revision m))
+               :direct-https nil
                (throw (ex-info "unsupported immutable dataset provider" {:provider (:provider m)})))]
-    (mapv (fn [{:keys [path]}] {:path path :url (str base "/" path)}) (:files m))))
+    (mapv (fn [{:keys [path url]}]
+            (let [resolved (if (= :direct-https (:provider m)) url (str base "/" path))]
+              (when-not (and (string? resolved) (str/starts-with? resolved "https://"))
+                (throw (ex-info "direct dataset file requires an HTTPS URL" {:path path :url url})))
+              {:path path :url resolved})) (:files m))))
+
+(defn parse-nist-midas-1045
+  "Parse the public NIST MIDAS 1045-steel experiment/model CSV.
+
+  The source concatenates experiment blocks. Each returned block retains the
+  initial condition and paired measured/model stresses; no uncertainty is
+  invented when the source does not provide it."
+  [text]
+  (let [number #(double #?(:clj (Double/parseDouble (str/trim %))
+                           :cljs (js/parseFloat (str/trim %))))
+        lines (vec (str/split-lines text))
+        starts (keep-indexed #(when (str/starts-with? %2 "Experiment Number:") %1) lines)
+        blocks (mapv
+                (fn [[start end]]
+                  (let [rows (subvec lines start end)
+                        field (fn [prefix]
+                                (some #(when (str/starts-with? % prefix)
+                                         (second (str/split % #"," 2))) rows))
+                        header-index (first (keep-indexed #(when (str/starts-with? %2 "Strain, Measured Stress") %1) rows))
+                        samples (if header-index
+                                  (->> (subvec rows (inc header-index))
+                                       (take-while #(re-matches #"\s*[-+0-9.eE]+\s*,.*" %))
+                                       (mapv (fn [line]
+                                               (let [[strain measured temp model model-temp]
+                                                     (mapv number (str/split line #","))]
+                                                 {:strain strain :measured-stress-MPa measured
+                                                  :temperature-C temp :model-stress-MPa model
+                                                  :model-temperature-C model-temp}))))
+                                  [])]
+                    {:experiment/id (str/trim (field "Experiment Number:"))
+                     :initial-temperature-C (number (field "Initial Temp [C]:"))
+                     :normal-strain-rate-1-s (number (field "Normal Strain Rate [1/s]:"))
+                     :samples samples :sample-count (count samples)}))
+                (map vector starts (concat (rest starts) [(count lines)])))]
+    {:format :nist-midas-1045-v1 :material "annealed AISI 1045 steel"
+     :experiments blocks :experiment-count (count blocks)
+     :sample-count (reduce + (map :sample-count blocks))
+     :measurement-uncertainty :not-provided-in-source}))
+
+(defn calibration-report
+  "Calculate paired model-vs-experiment residual statistics without converting
+  them into an experimental-validation claim. A declared RMSE limit is required."
+  [parsed rmse-limit-MPa]
+  (when-not (and (finite-number? rmse-limit-MPa) (pos? (double rmse-limit-MPa)))
+    (throw (ex-info "a positive finite RMSE limit is required" {:rmse-limit-MPa rmse-limit-MPa})))
+  (let [samples (mapcat :samples (:experiments parsed))
+        errors (mapv #(- (:model-stress-MPa %) (:measured-stress-MPa %)) samples)
+        n (count errors)]
+    (when (zero? n) (throw (ex-info "calibration dataset contains no samples" {})))
+    (let [rmse (#?(:clj Math/sqrt :cljs js/Math.sqrt) (/ (reduce + (map #(* % %) errors)) n))
+          bias (/ (reduce + errors) n)
+          maximum (apply max (map #(#?(:clj Math/abs :cljs js/Math.abs) %) errors))]
+      {:check :constitutive-calibration-correlation :samples n :rmse-MPa rmse
+       :mean-bias-MPa bias :maximum-absolute-error-MPa maximum
+       :rmse-limit-MPa (double rmse-limit-MPa) :passed? (<= rmse rmse-limit-MPa)
+       :experimental-validation? false
+       :limitations [:source-does-not-provide-measurement-uncertainty
+                     :published-model-correlation-is-not-independent-validation]})))
 
 (defn parse-nasa-ofi
   "Parse NASA TMR smooth-body-separation Oil Film Interferometry text.
@@ -84,7 +151,9 @@
                   (not= :experiment (:data-origin m)) (conj :not-independent-experiment)
                   (not (true? (:commercial-use? m))) (conj :commercial-use-not-permitted)
                   (not= :independent (:validation-role m)) (conj :not-independent-from-solver)
-                  (not (map? (:uncertainty m))) (conj :measurement-uncertainty-missing)
+                  (or (not (map? (:uncertainty m)))
+                      (= :not-provided-in-source (get-in m [:uncertainty :status])))
+                  (conj :measurement-uncertainty-missing)
                   (not (some #{:validation :test} (map :split (:files m)))) (conj :held-out-split-missing))]
     {:dataset/id (:dataset/id m) :eligible? (empty? reasons) :reasons reasons
      :scope (:validation-scope m)}))

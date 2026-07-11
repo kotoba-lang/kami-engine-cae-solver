@@ -150,6 +150,15 @@ and simulated trajectories, but its CC-BY-NC-4.0 license makes it unsuitable
 for commercial qualification. The small pinned Aethron CFD CSV is downloaded
 in CI, but remains training-only synthetic data.
 
+The registry also content-pins the NIST MIDAS experimental compression data
+for annealed AISI 1045 steel. Run
+`clojure -M:dataset -m verify-external-dataset nist-midas-1045-dynamic-plasticity`
+to download the NIST CSV over HTTPS, reject byte/hash drift, parse its experiment
+blocks, and reproduce paired published-model residual statistics. The source
+does not publish per-sample measurement uncertainty, so the resulting report is
+explicitly a calibration correlation—not independent validation or a released
+production material card.
+
 `resources/cae/qualification-matrix.edn` separately tracks numerical
 verification, independent experimental validation and software quality for
 each applicability scope. `cae.vv/industrial-release-gate` requires all three,

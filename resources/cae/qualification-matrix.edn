@@ -121,6 +121,17 @@
              :temperature-range :strain-rate-range :calibration :approval-validity]
   :excluded [:physical-property-validation :production-material-release
              :regulatory-approval :design-signoff]}
+ {:scope/id :materials/nist-midas-1045-calibration
+  :scope {:material "annealed AISI 1045 steel" :loading :dynamic-compression
+          :source :nist-midas :dataset "mds2-2393"}
+  :numerical-verification :published-model-residuals-reproduced
+  :experimental-validation :not-independent-and-uncertainty-missing
+  :software-quality :content-hash-and-semantic-parser-tested
+  :release-status :not-release-qualified
+  :included [:experimental-stress-strain :temperature :strain-rate
+             :published-model-correlation]
+  :excluded [:independent-validation :uncertainty-aware-acceptance
+             :production-material-card :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete

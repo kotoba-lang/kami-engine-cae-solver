@@ -80,6 +80,12 @@
                      :data-origin :synthetic :intended-use :training-only :commercial-use? true
                      :validation-role :same-class-synthetic :citation "smoke"
                      :files [{:path "x.csv" :sha256 (apply str (repeat 64 "a")) :bytes 1 :split :train}]})
+        nist-correlation (-> (dataset/parse-nist-midas-1045
+                              (str "Experiment Number:,1\nInitial Temp [C]:,23\n"
+                                   "Normal Strain Rate [1/s]:,1000\n"
+                                   "Strain, Measured Stress [MPa], Data Temp [C], Model Stress [MPa], Model Temp [C]\n"
+                                   "0.01,900,24,910,24\n"))
+                             (dataset/calibration-report 20.0))
         material-decision (material-card/usage-eligibility
                            {:material/id "cljs-synthetic" :revision "1" :designation "Synthetic"
                             :standard "NONE" :batch/lot "NONE" :supplier "test" :laboratory "test"
@@ -132,6 +138,7 @@
     (check! (= 2 (count (:rows table))) "CalculiX reader invalid" {:result table})
     (check! (= :metadata-verified (:status ds)) "dataset manifest invalid" {:result ds})
     (check! (= :metadata-audited (:status audited-ds)) "strict dataset manifest invalid" {:result audited-ds})
+    (check! (:passed? nist-correlation) "NIST material correlation parser invalid" {:result nist-correlation})
     (check! (:eligible? material-decision) "material card applicability invalid" {:result material-decision})
     (check! (:complete? external-log) "external OpenFOAM log parser invalid" {:result external-log})
     (check! (= 2 (:point-count vtk)) "VTK reader invalid" {:result vtk})

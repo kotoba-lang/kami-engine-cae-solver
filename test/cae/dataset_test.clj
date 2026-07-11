@@ -53,3 +53,33 @@
     (is (= :content-verified (:status verified)))
     (is (:eligible? eligibility))
     (is (empty? (:reasons eligibility)))))
+
+(deftest nist-midas-parser-retains-experimental-conditions-and-correlation
+  (let [parsed (dataset/parse-nist-midas-1045
+                (str "Experiment Number:,4002.0\n"
+                     "Initial Temp [C]:,23.0\n"
+                     "Normal Strain Rate [1/s]:,4391.17\n"
+                     "Strain, Measured Stress [MPa], Data Temp [C], Model Stress [MPa],  Model Temp [C]\n"
+                     "0.01,900,30,910,29\n0.02,920,31,900,31\n"))
+        experiment (first (:experiments parsed))
+        report (dataset/calibration-report parsed 20.0)]
+    (is (= 1 (:experiment-count parsed)))
+    (is (= 2 (:sample-count parsed)))
+    (is (= 4391.17 (:normal-strain-rate-1-s experiment)))
+    (is (= :not-provided-in-source (:measurement-uncertainty parsed)))
+    (is (< 15.8 (:rmse-MPa report) 15.9))
+    (is (:passed? report))
+    (is (false? (:experimental-validation? report)))))
+
+(deftest nist-calibration-data-remains-ineligible-for-independent-validation
+  (let [manifest (entry "nist-midas-1045-dynamic-plasticity")
+        observed (into {} (map (fn [{:keys [path sha256 bytes]}]
+                                 [path {:sha256 sha256 :bytes bytes}]) (:files manifest)))
+        verified (dataset/verify-content manifest observed)
+        eligibility (dataset/qualification-eligibility verified)]
+    (is (= "https://data.nist.gov/od/ds/mds2-2393/MIDAS_steel_data_and_fits_to_A1.csv"
+           (:url (first (dataset/immutable-download-urls manifest)))))
+    (is (false? (:eligible? eligibility)))
+    (is (some #{:not-validation-use} (:reasons eligibility)))
+    (is (some #{:not-independent-from-solver} (:reasons eligibility)))
+    (is (some #{:measurement-uncertainty-missing} (:reasons eligibility)))))
