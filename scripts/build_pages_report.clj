@@ -10,28 +10,71 @@
             [shadow.css :refer [css]]
             [shadow.css.build :as css-build]))
 
-(def $body (css {:font-family "system-ui,sans-serif" :max-width "1040px" :margin "3rem auto"
-                 :padding "0 1rem" :color "#172033"}))
+(def $body (css {:font-family "-apple-system,BlinkMacSystemFont,\"SF Pro Display\",system-ui,sans-serif"
+                 :margin "0" :color "#1d1d1f" :background "#f5f5f7" :overflow "hidden"}))
+(def $app (css {:height "100dvh" :display "grid" :grid-template-rows "64px minmax(0,1fr)"
+                :background "radial-gradient(circle at 55% 20%,#fff 0,#f5f5f7 48%,#ececf0 100%)"}))
+(def $toolbar (css :flex {:align-items "center" :justify-content "space-between" :padding "0 22px"
+                          :background "#ffffffb8" :backdrop-filter "blur(24px) saturate(180%)"
+                          :border-bottom "1px solid #00000012" :z-index "10"}))
+(def $brand (css :flex {:align-items "center" :gap "10px" :font-weight "700" :letter-spacing "-.02em"}))
+(def $traffic (css {:width "12px" :height "12px" :border-radius "50%" :background "#30d158"
+                    :box-shadow "0 0 0 5px #30d1581f"}))
+(def $workspace (css {:display "grid" :grid-template-columns "210px minmax(0,1fr) 260px"
+                      :gap "14px" :padding "14px" :min-height "0"}
+                     ["@media(max-width:900px)" {:grid-template-columns "1fr" :grid-template-rows "auto minmax(0,1fr) auto"
+                                                 :padding "8px" :gap "8px"}]))
+(def $panel (css {:background "#ffffffb8" :backdrop-filter "blur(22px) saturate(160%)"
+                  :border "1px solid #ffffffcc" :border-radius "20px" :box-shadow "0 12px 38px #00000012"
+                  :min-height "0"}))
+(def $sidebar (css {:padding "12px" :overflow-y "auto"}
+                   ["@media(max-width:900px)" {:display "flex" :overflow-x "auto" :overflow-y "hidden" :padding "8px"}]))
+(def $section-label (css {:font-size "11px" :font-weight "700" :letter-spacing ".08em"
+                          :text-transform "uppercase" :color "#6e6e73" :padding "7px 9px"}))
+(def $scene-button (css :flex {:width "100%" :align-items "center" :gap "9px" :min-height "42px"
+                               :border "0" :background "transparent" :padding "8px 10px" :border-radius "11px"
+                               :cursor "pointer" :color "#3a3a3c" :font-weight "600" :white-space "nowrap"}
+                        [:hover {:background "#0000000a"}]
+                        ["&.active" {:background "#007aff" :color "white" :box-shadow "0 4px 12px #007aff45"}]
+                        ["@media(max-width:900px)" {:width "auto"}]))
 (def $ok (css {:color "#087443" :font-weight "700"}))
-(def $table (css {:border-collapse "collapse" :width "100%" :margin "1.5rem 0"}))
+(def $table (css {:border-collapse "collapse" :width "100%" :font-size "12px"}))
 (def $cell (css {:padding ".7rem" :border-bottom "1px solid #d8dee9" :text-align "left"}))
 (def $head (css {:padding ".7rem" :border-bottom "1px solid #d8dee9" :text-align "left"
                  :background "#f4f7fb"}))
 (def $evidence (css {:overflow "auto" :background "#111827" :color "#d1fae5"
                      :padding "1rem" :border-radius ".5rem"}))
-(def $stage (css {:position "relative" :margin "1.5rem 0" :border-radius "20px"
-                  :overflow "hidden" :box-shadow "0 16px 36px #17203333"}))
-(def $canvas (css {:display "block" :width "100%" :height "310px" :background "#050d18"}))
-(def $overlay (css {:position "absolute" :right "18px" :top "18px" :color "#eafff6"
-                    :background "#061220cc" :padding "12px 14px" :border-radius "12px"
-                    :font-weight "700" :min-width "240px"}))
+(def $stage (css {:position "relative" :overflow "hidden" :min-height "0" :border-radius "22px"
+                  :background "#050d18" :box-shadow "0 16px 42px #06122030"}))
+(def $canvas (css {:display "block" :width "100%" :height "100%" :min-height "420px"
+                   :background "#050d18" :cursor "crosshair" :touch-action "none"}
+                  ["@media(max-width:900px)" {:min-height "360px"}]))
+(def $overlay (css {:position "absolute" :left "16px" :top "16px" :color "#fff"
+                    :background "#15191f9e" :backdrop-filter "blur(18px)" :padding "11px 14px"
+                    :border "1px solid #ffffff24" :border-radius "15px" :font-weight "650" :min-width "220px"
+                    :pointer-events "none"}))
+(def $action-zone (css {:position "absolute" :inset "74px 28px 28px" :border "1.5px dashed #64d2ffb8"
+                        :border-radius "18px" :pointer-events "none" :box-shadow "inset 0 0 50px #0a84ff12"}))
+(def $action-label (css {:position "absolute" :left "50%" :bottom "14px" :transform "translateX(-50%)"
+                         :padding "9px 14px" :border-radius "999px" :background "#15191fbd"
+                         :backdrop-filter "blur(18px)" :color "white" :font-size "13px" :font-weight "650"
+                         :white-space "nowrap" :pointer-events "none"}))
+(def $crosshair (css {:position "absolute" :left "50%" :top "50%" :width "36px" :height "36px"
+                      :transform "translate(-50%,-50%)" :border "1px solid #64d2ff80" :border-radius "50%"
+                      :box-shadow "0 0 0 7px #64d2ff12" :pointer-events "none"}))
+(def $action-cursor (css {:position "absolute" :left "50%" :top "50%" :width "34px" :height "34px"
+                          :transform "translate(-50%,-50%)" :border "2px solid #ffd60a" :border-radius "50%"
+                          :box-shadow "0 0 0 8px #ffd60a22,0 0 24px #ffd60a" :opacity "0"
+                          :pointer-events "none" :transition "opacity .18s"}
+                         ["&.visible" {:opacity "1"}]))
 (def $metric (css {:color "#7af4ba" :min-height "1.25em"}))
 (def $hint (css {:background "#e8fff5" :border "1px solid #9ee8c7" :padding "10px 14px"
                  :border-radius "12px" :font-weight "700" :margin "0 0 12px"}))
-(def $scene-list (css :flex :flex-wrap {:gap "8px" :margin "12px 0"}))
-(def $controls (css :flex {:gap "10px" :align-items "center" :margin "0 0 18px"}))
+(def $inspector (css {:padding "14px" :overflow-y "auto"}))
+(def $card (css {:background "#f5f5f7" :padding "12px" :border-radius "14px" :margin-bottom "10px"}))
+(def $controls (css :flex :flex-wrap {:gap "8px" :align-items "center"}))
 (def $button (css {:border "1px solid #bbcad8" :background "#fff" :padding "8px 12px"
-                   :border-radius "999px" :cursor "pointer"}
+                   :border-radius "999px" :cursor "pointer" :min-height "40px" :font-weight "600"}
                   ["&.active" {:background "#172033" :color "#fff"}]))
 
 (def scenes ["CFD" "FEM" "Process" "Materials" "EM" "Production" "Sod FVM"
@@ -113,31 +156,47 @@
                   [:title "Kotoba CAE — realtime CLJS WebGPU"]
                   [:link {:rel "stylesheet" :href "./css/main.css"}]]
                  [:body {:class $body}
-                  [:h1 "Kotoba CAE"] [:p {:class $ok} "● CLJS realtime simulation ready"]
-                  [:p "Stateful reference physics is stepped and rendered directly from ClojureScript with WebGPU."]
-                  [:section {:class $stage}
-                   [:canvas {:id "kami-webgpu-canvas" :class $canvas
-                             :aria-label "ClojureScript direct WebGPU realtime simulation"}]
-                   [:div {:class $overlay}
-                    [:div {:id "kami-runtime-status"} "Loading ClojureScript WebGPU…"]
-                    [:div {:id "kami-scene-name"} "CFD · flow / combustion"] [:hr]
-                    [:div "Sim time: " [:span {:id "kami-sim-time"} "0.00"] " s · steps: " [:span {:id "kami-sim-steps"} "0"]]
-                    [:div {:id "kami-sim-metric" :class $metric} "initializing simulation"]
-                    [:div "CLJS frames: " [:span {:id "kami-cljs-frames"} "0"] " · WebGPU draws: " [:span {:id "kami-webgpu-draws"} "0"]]]]
-                  [:div {:class $scene-list}
-                   (map-indexed (fn [i label] [:button {:class (str $button (when (zero? i) " active"))
-                                                          :data-kami-scene i} label]) scenes)]
-                  [:div {:id "kami-action-status" :class $hint}
-                   "Drag canvas: inlet impulse · click or drag to apply an action"]
-                  [:div {:class $controls}
-                   [:button {:id "kami-sim-toggle" :class $button} "Pause"]
-                   [:button {:id "kami-sim-reset" :class $button} "Reset"]
-                   [:label "Speed " [:select {:id "kami-sim-speed" :class $button}
-                                      (for [speed [0.25 0.5 1 2 4]]
-                                        [:option (cond-> {:value speed} (= speed 1) (assoc :selected true)) (str speed "×")])]]]
-                  [:table {:class $table} [:thead [:tr (for [x ["Domain" "Metric" "Value" "Unit"]] [:th {:class $head} x])]]
-                   [:tbody (map metric-row rows)]]
-                  [:h2 "Runtime evidence"] [:pre {:class $evidence} (pr-str report)]
+                  [:main {:class $app}
+                   [:header {:class $toolbar}
+                    [:div {:class $brand} [:span {:class $traffic}] [:span "Kotoba CAE"] [:small "Realtime Lab"]]
+                    [:div {:class $ok} "● WebGPU / CLJS"]]
+                   [:div {:class $workspace}
+                    [:nav {:class (str $panel " " $sidebar) :aria-label "Physics scenes"}
+                     [:div {:class $section-label} "Physics"]
+                     (map-indexed (fn [i label]
+                                    [:button {:class (str $scene-button (when (zero? i) " active"))
+                                              :data-kami-scene i :aria-pressed (= i 0)}
+                                     [:span (if (< i 6) "●" "◇")] label]) scenes)]
+                    [:section {:class $stage :aria-label "Interactive simulation viewport"}
+                     [:canvas {:id "kami-webgpu-canvas" :class $canvas
+                               :aria-label "Interactive ClojureScript WebGPU simulation. Click or drag inside the dashed area."}]
+                     [:div {:class $action-zone}]
+                     [:div {:class $crosshair}]
+                     [:div {:id "kami-action-cursor" :class $action-cursor}]
+                     [:div {:class $overlay}
+                      [:div {:id "kami-runtime-status"} "Loading WebGPU…"]
+                      [:div {:id "kami-scene-name"} "CFD · flow / combustion"]
+                      [:div "Time " [:span {:id "kami-sim-time"} "0.00"] " s · " [:span {:id "kami-sim-steps"} "0"] " steps"]]
+                     [:div {:id "kami-action-status" :class $action-label}
+                      "◎ Drag inside dashed area to apply inlet impulse"]]
+                    [:aside {:class (str $panel " " $inspector)}
+                     [:div {:class $section-label} "Interaction"]
+                     [:div {:class $card}
+                      [:strong {:id "kami-action-title"} "Inlet impulse"]
+                      [:p "Click to apply. Drag to choose position and increase strength."]]
+                     [:div {:class $section-label} "Live response"]
+                     [:div {:class $card} [:div {:id "kami-sim-metric" :class $metric} "Initializing simulation"]]
+                     [:div {:class $controls}
+                      [:button {:id "kami-sim-toggle" :class $button} "Pause"]
+                      [:button {:id "kami-sim-reset" :class $button} "Reset"]
+                      [:label "Speed " [:select {:id "kami-sim-speed" :class $button :aria-label "Simulation speed"}
+                                         (for [speed [0.25 0.5 1 2 4]]
+                                           [:option (cond-> {:value speed} (= speed 1) (assoc :selected true)) (str speed "×")])]]]
+                     [:div {:class $section-label} "Renderer"]
+                     [:div {:class $card} "Frames " [:span {:id "kami-cljs-frames"} "0"] " · Draws " [:span {:id "kami-webgpu-draws"} "0"]]
+                     [:details [:summary "Reference metrics"]
+                      [:table {:class $table} [:tbody (map metric-row rows)]]]
+                     [:pre {:class $evidence :hidden true} (pr-str report)]]]]
                   [:script (h/raw (str "window.__KAMI_CAE_METRICS__=" report-json ";"))]
                   [:script {:src "./kami-cae-webgpu.js"}]]])))
     (println "Generated dist/index.html with Hiccup + Shadow CSS")))
