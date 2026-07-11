@@ -111,5 +111,11 @@ WebGPU API directly through CLJS-to-JavaScript interop. Scene selection, GPU
 buffers, WGSL pipelines, render passes, frames, and draw counters no longer
 cross a per-frame Wasm host boundary. Wasm remains an appropriate optional
 backend for large solver hot loops, but is not loaded for UI/render dispatch.
+All 15 scenes have time-dependent state, realtime geometry regeneration,
+pause/resume, reset, speed control, and live telemetry. The Sod shock-tube scene
+steps the portable finite-volume kernel; the other scenes currently use
+stateful reduced-order/analytic dynamics and must not be read as commercial CAE
+validation results. The report DOM is generated from Hiccup2 and its minified,
+zero-runtime stylesheet is extracted by Shadow CSS.
 If WebGPU is unavailable, the CAE report remains readable and reports the
 fallback state rather than pretending to render.

@@ -32,8 +32,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run portable CLJS smoke test
         run: npx --yes nbb -cp src:test -e "(require '[cae.cljs-smoke-test])"
-      - name: Generate Pages report from CLJS solver runtime
-        run: npx --yes nbb -cp src:scripts -e "(require '[build-pages-report])"
+      - name: Generate Hiccup report and Shadow CSS
+        run: clojure -M:pages -m build-pages-report
       - name: Compile direct ClojureScript WebGPU renderer
         run: |
           clojure -M:pages -m cljs.main -O simple -t browser \
