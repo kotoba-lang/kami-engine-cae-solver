@@ -11,9 +11,11 @@
             [shadow.css.build :as css-build]))
 
 (def $body (css {:font-family "-apple-system,BlinkMacSystemFont,\"SF Pro Display\",system-ui,sans-serif"
-                 :margin "0" :color "#1d1d1f" :background "#f5f5f7" :overflow "hidden"}))
+                 :margin "0" :color "#1d1d1f" :background "#f5f5f7" :overflow "hidden"}
+                ["@media(max-width:620px)" {:overflow-y "auto" :overflow-x "hidden"}]))
 (def $app (css {:height "100dvh" :display "grid" :grid-template-rows "64px minmax(0,1fr)"
-                :background "radial-gradient(circle at 55% 20%,#fff 0,#f5f5f7 48%,#ececf0 100%)"}))
+                :background "radial-gradient(circle at 55% 20%,#fff 0,#f5f5f7 48%,#ececf0 100%)"}
+               ["@media(max-width:620px)" {:height "auto" :min-height "100dvh" :display "block"}]))
 (def $toolbar (css :flex {:align-items "center" :justify-content "space-between" :padding "0 22px"
                           :background "#ffffffb8" :backdrop-filter "blur(24px) saturate(180%)"
                           :border-bottom "1px solid #00000012" :z-index "10"}))
@@ -22,13 +24,17 @@
                     :box-shadow "0 0 0 5px #30d1581f"}))
 (def $workspace (css {:display "grid" :grid-template-columns "210px minmax(0,1fr) 260px"
                       :gap "14px" :padding "14px" :min-height "0"}
-                     ["@media(max-width:900px)" {:grid-template-columns "1fr" :grid-template-rows "auto minmax(0,1fr) auto"
-                                                 :padding "8px" :gap "8px"}]))
+                     ["@media(max-width:900px)" {:grid-template-columns "minmax(0,1fr) 250px"
+                                                 :grid-template-rows "58px minmax(0,1fr)"
+                                                 :padding "8px" :gap "8px"}]
+                     ["@media(max-width:620px)" {:display "grid" :grid-template-columns "1fr"
+                                                 :grid-template-rows "58px 390px auto"}]))
 (def $panel (css {:background "#ffffffb8" :backdrop-filter "blur(22px) saturate(160%)"
                   :border "1px solid #ffffffcc" :border-radius "20px" :box-shadow "0 12px 38px #00000012"
                   :min-height "0"}))
 (def $sidebar (css {:padding "12px" :overflow-y "auto"}
-                   ["@media(max-width:900px)" {:display "flex" :overflow-x "auto" :overflow-y "hidden" :padding "8px"}]))
+                   ["@media(max-width:900px)" {:display "flex" :grid-column "1/-1" :overflow-x "auto"
+                                               :overflow-y "hidden" :padding "8px"}]))
 (def $section-label (css {:font-size "11px" :font-weight "700" :letter-spacing ".08em"
                           :text-transform "uppercase" :color "#6e6e73" :padding "7px 9px"}))
 (def $scene-button (css :flex {:width "100%" :align-items "center" :gap "9px" :min-height "42px"
@@ -48,7 +54,8 @@
                   :background "#050d18" :box-shadow "0 16px 42px #06122030"}))
 (def $canvas (css {:display "block" :width "100%" :height "100%" :min-height "420px"
                    :background "#050d18" :cursor "crosshair" :touch-action "none"}
-                  ["@media(max-width:900px)" {:min-height "360px"}]))
+                  ["@media(max-width:900px)" {:min-height "0"}]
+                  ["@media(max-width:620px)" {:min-height "390px"}]))
 (def $overlay (css {:position "absolute" :left "16px" :top "16px" :color "#fff"
                     :background "#15191f9e" :backdrop-filter "blur(18px)" :padding "11px 14px"
                     :border "1px solid #ffffff24" :border-radius "15px" :font-weight "650" :min-width "220px"
@@ -70,7 +77,8 @@
 (def $metric (css {:color "#7af4ba" :min-height "1.25em"}))
 (def $hint (css {:background "#e8fff5" :border "1px solid #9ee8c7" :padding "10px 14px"
                  :border-radius "12px" :font-weight "700" :margin "0 0 12px"}))
-(def $inspector (css {:padding "14px" :overflow-y "auto"}))
+(def $inspector (css {:padding "14px" :overflow-y "auto"}
+                     ["@media(max-width:620px)" {:overflow "visible"}]))
 (def $card (css {:background "#f5f5f7" :padding "12px" :border-radius "14px" :margin-bottom "10px"}))
 (def $controls (css :flex :flex-wrap {:gap "8px" :align-items "center"}))
 (def $button (css {:border "1px solid #bbcad8" :background "#fff" :padding "8px 12px"
