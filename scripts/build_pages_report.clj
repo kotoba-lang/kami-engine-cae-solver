@@ -3,6 +3,8 @@
   (:require [cae.industrial]
             [cae.advanced]
             [cae.high-fidelity]
+            [cae.verification]
+            [cae.vv :as vv]
             [cae.solver :as solver]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
@@ -153,8 +155,17 @@
               {:domain "3D contact" :metric "Sliding" :value (:sliding? contact) :unit "boolean"}
               {:domain "Fracture" :metric "K/Kc utilization" :value (:utilization fracture) :unit "ratio"}
               {:domain "MPI" :metric "Halo messages" :value (:messages mpi) :unit "messages"}]
+        axial-benchmark (solver/solve {:solver {:kind :benchmark-suite} :case :axial-bar})
+        qualification (vv/qualification-gate
+                       {:scope {:physics :linear-elasticity :element :axial-bar}
+                        :checks [{:check :analytic-benchmark :passed? (:passed? axial-benchmark)
+                                  :result axial-benchmark}]
+                        :evidence {:case-id "pages-reference" :solver "kotoba-fem"
+                                   :solver-version "reference" :model-revision "github-pages"
+                                   :input-id "embedded" :mesh-id "not-supplied"
+                                   :executed-at "build-time" :platform "cljs/webgpu"}})
         report {:runtime "ClojureScript / WebGPU" :solver-fidelity :realtime-reference
-                :status :screening-only :metrics rows}
+                :status :screening-only :qualification qualification :metrics rows}
         report-json (json/write-str report)]
     (.mkdirs (io/file "dist"))
     (write-css!)
@@ -210,6 +221,11 @@
                                            [:option (cond-> {:value speed} (= speed 1) (assoc :selected true)) (str speed "×")])]]]
                      [:div {:class $section-label :data-i18n "app/renderer"} "Renderer"]
                      [:div {:class $card} "Frames " [:span {:id "kami-cljs-frames"} "0"] " · Draws " [:span {:id "kami-webgpu-draws"} "0"]]
+                     [:div {:class $section-label :data-i18n "app/qualification"} "Industrial qualification"]
+                     [:div {:class $card}
+                      [:strong {:id "kami-qualification" :data-i18n "app/not-qualified"} "Not qualified"]
+                      [:p {:data-i18n "app/qualification-help"}
+                       "Declared-scope V&V evidence is incomplete; no industrial accuracy claim."]]
                      [:details [:summary {:data-i18n "app/reference-metrics"} "Reference metrics"]
                       [:table {:class $table} [:tbody (map metric-row rows)]]]
                      [:pre {:class $evidence :hidden true} (pr-str report)]]]]

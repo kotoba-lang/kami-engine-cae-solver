@@ -97,6 +97,28 @@ These kernels are deliberately labelled `:fidelity :*-reference` and
 swapping in validated CFD/FEM/MPI implementations; they do not claim commercial
 solver verification or manufacturing release authority.
 
+## Numerical V&V and qualification gates
+
+`cae.vv` provides fail-closed evidence checks for a narrowly declared solver
+scope. A passing `:qualification-gate` requires all of the following, not just
+a regression test:
+
+- an independently evaluated analytic/public benchmark;
+- integral conservation with a scale-aware relative imbalance;
+- a finite iterative residual history meeting both final tolerance and
+  reduction requirements;
+- a monotonic three-grid study with observed order, Richardson extrapolation,
+  and fine-grid GCI below its declared tolerance;
+- complete traceability for case, solver/version, model revision, input, mesh,
+  execution time, and platform.
+
+Missing or failed evidence returns `:status :not-qualified` and
+`:claim :no-industrial-accuracy-claim`. Passing evidence returns only
+`:verified-for-declared-scope`; it never promotes the whole package to a
+commercial-fidelity claim. The Poiseuille and axial-bar analytic benchmarks
+now execute the actual `:cfd` and `:fem` solver paths instead of copying the
+analytic answer into the computed field.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this
