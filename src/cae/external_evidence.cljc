@@ -68,3 +68,43 @@
      :result-files (vec result-files) :platform platform :executed-at executed-at
      :log log :result result :passed? (boolean complete?)
      :status (if complete? :external-process-verified :external-process-rejected)}))
+
+(defn mpi-log
+  "Parse rank audit output. Completeness requires one ordered record per rank,
+  a common world size, and agreement between local and reduced sample counts."
+  [text]
+  (let [ranks (mapv (fn [[_ rank size samples partial]]
+                      {:rank (long (parse-number rank)) :size (long (parse-number size))
+                       :samples (long (parse-number samples)) :partial-sum (parse-number partial)})
+                    (re-seq #"(?m)^KOTOBA_MPI_RANK rank=(\d+) size=(\d+) samples=(\d+) partial=([-+0-9.Ee]+)$" text))
+        match (re-find #"(?m)^KOTOBA_MPI_RESULT size=(\d+) samples=(\d+) pi=([-+0-9.Ee]+) error=([-+0-9.Ee]+)$" text)
+        result (when match
+                 (let [[_ size samples pi error] match]
+                   {:size (long (parse-number size)) :samples (long (parse-number samples))
+                    :pi (parse-number pi) :absolute-error (parse-number error)}))
+        size (:size result)
+        complete? (and result (= size (count ranks))
+                       (= (mapv :rank ranks) (vec (range size)))
+                       (every? #(= size (:size %)) ranks)
+                       (= (:samples result) (reduce + 0 (map :samples ranks))))]
+    {:format :kotoba-mpi-log-v1 :ranks ranks :rank-count (count ranks) :result result
+     :allreduce :sum :gather? (boolean (seq ranks)) :complete? (boolean complete?)}))
+
+(defn mpi-process-evidence
+  [{:keys [case-id solver-version image-digest command exit-codes worker-source output-files
+           run-texts platform executed-at error-tolerance]}]
+  (let [runs (mapv mpi-log run-texts)
+        digest? (boolean (re-matches #"sha256:[0-9a-f]{64}" (or image-digest "")))
+        hash-record? #(and (re-matches #"[0-9a-f]{64}" (:sha256 %)) (pos? (:bytes %)))
+        deterministic? (and (= 2 (count run-texts)) (apply = run-texts))
+        error (get-in (first runs) [:result :absolute-error])
+        complete? (and (= [0 0] (vec exit-codes)) digest? (seq command)
+                       (hash-record? worker-source) (seq output-files)
+                       (every? hash-record? output-files) (every? :complete? runs)
+                       deterministic? (number? error) (<= error error-tolerance))]
+    {:case-id case-id :solver :openmpi :solver-version solver-version
+     :image-digest image-digest :command (vec command) :exit-codes (vec exit-codes)
+     :worker-source worker-source :output-files (vec output-files) :runs runs
+     :deterministic? deterministic? :error-tolerance error-tolerance
+     :platform platform :executed-at executed-at :passed? (boolean complete?)
+     :status (if complete? :external-mpi-verified :external-mpi-rejected)}))

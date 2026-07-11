@@ -44,6 +44,17 @@
   :release-status :not-release-qualified
   :included [:mach-0.05 :mach-0.1 :mach-0.2 :ofi-skin-friction]
   :excluded [:unmeasured-conditions :other-geometries :design-signoff]}
+ {:scope/id :parallel/openmpi-four-rank-allreduce
+  :scope {:runtime :openmpi :version "4.1.6" :ranks 4 :platform :linux-arm64
+          :case :distributed-midpoint-integration}
+  :numerical-verification :analytic-and-repeatability-passed
+  :experimental-validation :not-applicable-to-runtime-proof
+  :software-quality :digest-source-and-output-hash-evidence
+  :release-status :not-release-qualified
+  :included [:mpi-init-finalize :allreduce-sum :gather :rank-accounting
+             :two-run-bitwise-output-repeatability]
+  :excluded [:multi-node-network :fault-tolerance :strong-scaling :weak-scaling
+             :production-cfd :production-fem :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete

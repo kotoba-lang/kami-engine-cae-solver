@@ -29,3 +29,16 @@
     (is (= 0.001 (get-in fixture [:result :maximum-absolute-uz])))
     (is (zero? (get-in fixture [:analytic-check :relative-error])))
     (is (true? (get-in fixture [:analytic-check :passed?])))))
+
+(deftest committed-openmpi-run-is-rank-complete-and-repeatable
+  (let [fixture (fixture "cae/evidence/openmpi-4.1.6-four-rank-pi.edn")
+        run (first (:runs fixture))]
+    (is (= :external-mpi-verified (:status fixture)))
+    (is (re-matches #"sha256:[0-9a-f]{64}" (:image-digest fixture)))
+    (is (= 4 (:rank-count run)))
+    (is (= [0 1 2 3] (mapv :rank (:ranks run))))
+    (is (= 1000000 (reduce + (map :samples (:ranks run)))))
+    (is (= 1000000 (get-in run [:result :samples])))
+    (is (< (get-in run [:result :absolute-error]) 1.0e-12))
+    (is (true? (:deterministic? fixture)))
+    (is (apply = (map :sha256 (:output-files fixture))))))

@@ -194,6 +194,17 @@ that quantity. This narrowly verifies linear, small-strain axial response; it
 does not qualify nonlinear contact, plasticity, large deformation, fracture,
 or arbitrary industrial models.
 
+`clojure -M:dataset -m run-mpi-evidence` verifies a real four-rank OpenMPI
+4.1.6 runtime in a digest-pinned ARM64 container. The clean-room Kotoba worker
+distributes one million midpoint-integration samples, performs real
+`MPI_Allreduce` and `MPI_Gather` collectives, and emits one audit record per
+rank. The runner executes it twice, requires byte-identical output hashes,
+checks contiguous rank IDs and sample conservation, and rejects a π error above
+`1e-12`. The committed run assigns 250,000 samples to every rank and has an
+absolute error of about `1.10e-13`. This proves single-container multi-process
+execution only; multi-node networking, scaling efficiency, failure recovery,
+and production CFD/FEM decomposition remain outside the qualified scope.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this
