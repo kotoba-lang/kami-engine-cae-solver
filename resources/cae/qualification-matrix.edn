@@ -23,6 +23,17 @@
   :release-status :not-release-qualified
   :included [:container-runtime :block-mesh :transient-incompressible-solve]
   :excluded [:solution-accuracy-claim :turbulence :industrial-geometry :design-signoff]}
+ {:scope/id :external/calculix-axial-unit-cube
+  :scope {:solver :calculix :version "2.21" :case :c3d8-axial-unit-cube
+          :platform :linux-arm64}
+  :numerical-verification :analytic-benchmark-passed
+  :experimental-validation :not-applicable-to-analytic-benchmark
+  :software-quality :digest-and-file-hash-evidence
+  :release-status :not-release-qualified
+  :included [:container-runtime :linear-isotropic-elasticity :c3d8 :small-strain
+             :static-axial-load]
+  :excluded [:nonlinear-material :large-deformation :contact :plasticity :fracture
+             :industrial-geometry :design-signoff]}
  {:scope/id :cfd/nasa-sbse-rans
   :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump
           :quantity :skin-friction-coefficient}

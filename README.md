@@ -183,6 +183,17 @@ error `-4.17776e-18`. This proves real process execution and traceability, not
 general OpenFOAM solution accuracy; its qualification-matrix scope explicitly
 excludes an accuracy or design-signoff claim.
 
+The same evidence path now executes CalculiX 2.21 from a locally built ARM64
+container whose Ubuntu base digest and `calculix-ccx=2.21-1` package version are
+fixed in `containers/calculix/Dockerfile`. Run
+`clojure -M:dataset -m run-calculix-evidence` to solve the committed C3D8 unit
+cube, hash its INP/log/FRD/STA/CVG files, parse the actual FRD displacement
+field, and compare maximum axial displacement with the closed-form 0.001 m
+answer. The committed run has eight nodal samples and zero relative error for
+that quantity. This narrowly verifies linear, small-strain axial response; it
+does not qualify nonlinear contact, plasticity, large deformation, fracture,
+or arbitrary industrial models.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this

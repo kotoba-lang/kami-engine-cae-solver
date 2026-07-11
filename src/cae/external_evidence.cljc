@@ -29,17 +29,42 @@
      :final-continuity (peek continuity) :residual-records (count residuals)
      :final-residual-by-field (reduce (fn [m r] (assoc m (:field r) (dissoc r :field))) {} residuals)}))
 
+(defn calculix-log [text]
+  (let [version (second (re-find #"CalculiX Version ([0-9.]+)" text))
+        elapsed (some-> (re-find #"Total CalculiX Time: ([0-9.Ee+-]+)" text) second parse-number)
+        finished? (boolean (re-find #"Job finished" text))
+        fatal? (boolean (re-find #"(?i)\*ERROR|fatal error" text))]
+    {:format :calculix-log-v1 :version version :elapsed-seconds elapsed
+     :finished? finished? :fatal-error? fatal?
+     :complete? (boolean (and version elapsed finished? (not fatal?)))}))
+
+(defn calculix-frd-displacements [text]
+  (let [section (second (re-find #"(?ms)-4\s+DISP.*?\n(.*?)^\s*-3\s*$" text))
+        number-pattern #"[-+]?\d+(?:\.\d+)?(?:[Ee][-+]?\d+)?"
+        rows (if-not section []
+                 (->> (re-seq #"(?m)^\s*-1\s+.*$" section)
+                      (mapv (fn [line]
+                              (let [[_ node ux uy uz] (mapv parse-number (re-seq number-pattern line))]
+                                {:node (long node) :ux ux :uy uy :uz uz})))))]
+    {:format :calculix-frd-displacement-v1 :samples rows :sample-count (count rows)
+     :maximum-absolute-uz (when (seq rows) (apply max (map #(abs (:uz %)) rows)))
+     :maximum-displacement (when (seq rows)
+                             (apply max (map (fn [{:keys [ux uy uz]}]
+                                               (Math/sqrt (+ (* ux ux) (* uy uy) (* uz uz)))) rows)))}))
+
 (defn process-evidence
-  [{:keys [solver solver-version image-digest command exit-code input-files result-files log-text
+  [{:keys [solver solver-version image-digest command exit-code input-files result-files log-text result-text
            platform executed-at case-id]}]
-  (let [log (when (= solver :openfoam) (openfoam-log log-text))
+  (let [log (case solver :openfoam (openfoam-log log-text) :calculix (calculix-log log-text) nil)
+        result (when (= solver :calculix) (calculix-frd-displacements result-text))
         digest? (boolean (re-matches #"sha256:[0-9a-f]{64}" (or image-digest "")))
         hashed? (fn [files] (and (seq files) (every? #(and (re-matches #"[0-9a-f]{64}" (:sha256 %))
                                                             (pos? (:bytes %))) files)))
         complete? (and (zero? exit-code) digest? (seq command) (hashed? input-files)
-                       (hashed? result-files) (:complete? log))]
+                       (hashed? result-files) (:complete? log)
+                       (or (not= solver :calculix) (pos? (:sample-count result))))]
     {:case-id case-id :solver solver :solver-version solver-version :image-digest image-digest
      :command (vec command) :exit-code exit-code :input-files (vec input-files)
      :result-files (vec result-files) :platform platform :executed-at executed-at
-     :log log :passed? (boolean complete?)
+     :log log :result result :passed? (boolean complete?)
      :status (if complete? :external-process-verified :external-process-rejected)}))
