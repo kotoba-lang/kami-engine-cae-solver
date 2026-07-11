@@ -66,3 +66,16 @@
     (is (= [:experimental-validation] (:missing-pillars rejected)))
     (is (= :release-qualified-for-declared-scope (:status passed)))
     (is (= :declared-scope-industrial-use (:claim passed)))))
+
+(deftest experimental-validation-is-uncertainty-aware
+  (let [passing (vv/experimental-validation-check
+                 {:dataset-id "nasa-tmr" :quantity :skin-friction-coefficient
+                  :predicted [0.0101 0.0198 0.0302] :measured [0.01 0.02 0.03]
+                  :uncertainty [0.001 0.001 0.001] :minimum-coverage 1.0})
+        failing (vv/experimental-validation-check
+                 {:predicted [0.02 0.03] :measured [0.01 0.02]
+                  :uncertainty [0.001 0.001]})]
+    (is (:passed? passing))
+    (is (= :validated-for-declared-scope (:status passing)))
+    (is (false? (:passed? failing)))
+    (is (= 0.0 (:coverage failing)))))

@@ -36,3 +36,20 @@
   (testing "missing hashes are rejected"
     (is (thrown? Exception
                  (dataset/audit-manifest (assoc-in (entry "aethron-cfd-pinn") [:files 0 :sha256] nil))))))
+
+(deftest nasa-ofi-parser-preserves-measurement-uncertainty
+  (let [parsed (dataset/parse-nasa-ofi
+                "VARIABLES = X Y Z dX dZ Cf e_Cf\n173.40 0.00 0.00 13.75 7.00 0.004124 0.000082\n")
+        sample (first (:samples parsed))]
+    (is (= 1 (:sample-count parsed)))
+    (is (= 0.004124 (:skin-friction-coefficient sample)))
+    (is (= 0.000082 (:absolute-uncertainty sample)))))
+
+(deftest nasa-cc0-experiment-is-eligible-after-byte-verification
+  (let [m (entry "nasa-tmr-sbse-ofi")
+        observed (into {} (map (fn [{:keys [path sha256 bytes]}] [path {:sha256 sha256 :bytes bytes}]) (:files m)))
+        verified (dataset/verify-content m observed)
+        eligibility (dataset/qualification-eligibility verified)]
+    (is (= :content-verified (:status verified)))
+    (is (:eligible? eligibility))
+    (is (empty? (:reasons eligibility)))))
