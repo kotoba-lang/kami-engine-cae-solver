@@ -1,10 +1,12 @@
-{:paths ["src"]
+{:paths ["src" "resources"]
  ;; Zero-dep, portable .cljc. The CAE solver CONTRACT — one `solve` multimethod
  ;; dispatching on [:solver :kind], so a case can be answered by a reduced-order
  ;; backend (:cfd/:fem/:process/:materials/:emag/:production-des) today and a
  ;; high-fidelity host adapter tomorrow with no caller change. Purpose: SOLVER DISPATCH only (no physics,
  ;; no datoms — those are vphysics-clj and datom-clj).
- :deps {}
+ :deps {io.github.kotoba-lang/i18n
+        {:git/url "https://github.com/kotoba-lang/i18n.git"
+         :git/sha "277cb404928392e01b257cbc0c48a2a304e2a6d1"}}
  :aliases
  {:pages {:extra-paths ["scripts"]
           :extra-deps {org.clojure/clojurescript {:mvn/version "1.11.132"}

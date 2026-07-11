@@ -126,5 +126,11 @@ The single-screen interface keeps scene navigation, the simulation viewport,
 controls, and response telemetry visible together. A dashed action boundary,
 crosshair, plain-language instruction, and pointer-following action ring make
 the interactive region perceivable without relying on color alone.
+
+UI localization uses [`kotoba-lang/i18n`](https://github.com/kotoba-lang/i18n):
+the English and Japanese EDN catalogs are embedded at CLJS compile time and
+resolved at runtime through `i18n.core`. The toolbar locale selector updates
+both Hiccup chrome and dynamic WebGPU scene/action labels without a rebuild,
+and persists the choice in browser storage.
 If WebGPU is unavailable, the CAE report remains readable and reports the
 fallback state rather than pretending to render.
