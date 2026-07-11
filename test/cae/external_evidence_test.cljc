@@ -1,5 +1,6 @@
 (ns cae.external-evidence-test
   (:require [cae.external-evidence :as evidence]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is]]))
 
 (def log-sample
@@ -31,3 +32,25 @@
     (is (= 1 (:sample-count frd)))
     (is (= 0.001 (:maximum-absolute-uz frd)))
     (is (= 0.001 (:maximum-displacement frd)))))
+
+(def mpi-sample
+  (str "KOTOBA_MPI_RANK rank=0 size=2 samples=5 partial=15.0\n"
+       "KOTOBA_MPI_RANK rank=1 size=2 samples=5 partial=16.0\n"
+       "KOTOBA_MPI_RESULT size=2 samples=10 pi=3.1 error=0.04159\n"))
+
+(deftest parses-and-fail-closes-real-mpi-audit
+  (let [parsed (evidence/mpi-log mpi-sample)
+        file {:path "x" :sha256 (apply str (repeat 64 "a")) :bytes 10}
+        base {:case-id "mpi" :solver-version "4.1.6"
+              :image-digest (str "sha256:" (apply str (repeat 64 "b")))
+              :command ["mpirun" "-np" "2"] :exit-codes [0 0] :worker-source file
+              :output-files [file file] :run-texts [mpi-sample mpi-sample]
+              :error-tolerance 0.05}]
+    (is (:complete? parsed))
+    (is (= [0 1] (mapv :rank (:ranks parsed))))
+    (is (= :external-mpi-verified (:status (evidence/mpi-process-evidence base))))
+    (is (= :external-mpi-rejected
+           (:status (evidence/mpi-process-evidence
+                     (assoc base :run-texts [mpi-sample (str mpi-sample "x")])))))
+    (is (false? (:complete? (evidence/mpi-log
+                             (str/replace mpi-sample "rank=1" "rank=2")))))))
