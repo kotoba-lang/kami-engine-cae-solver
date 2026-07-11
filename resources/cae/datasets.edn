@@ -20,6 +20,28 @@
           {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp05.dat" :sha256 "b6a3540bc8f74533990457825e554fdea08e0f099e798fe98f5b884914bf72dc" :bytes 2591 :split :validation}
           {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp1.dat" :sha256 "a1fba5e9bb4eb079ab86d62ff3923ef9dfec271ffbd07393cb2a51f7864beb01" :bytes 2669 :split :validation}
           {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp2.dat" :sha256 "299c72ff1ecc7ea97f57bccc5bc4a55ed36a67ab7fb9d19590f40a744f9a1810" :bytes 2515 :split :test}]}
+ {:dataset/id "nist-midas-1045-dynamic-plasticity"
+  :provider :direct-https
+  :repository "NIST/MIDAS/mds2-2393"
+  :revision "15aa7324d08ea5c2cb74d6d873fe87df006a7843"
+  :license :nist-open
+  :license-uri "https://www.nist.gov/open/license"
+  :domain :dynamic-plasticity
+  :data-origin :experiment
+  :intended-use :material-model-calibration
+  :commercial-use? true
+  :validation-role :published-calibration-data
+  :validation-scope {:material "annealed AISI 1045 steel"
+                     :loading :compression
+                     :temperature-C [23.0 1000.0]
+                     :quantity [:true-strain :flow-stress :temperature :strain-rate]}
+  :uncertainty {:status :not-provided-in-source}
+  :parser :nist-midas-1045
+  :citation "NIST MIDAS, A Dynamic Plasticity Model for Rapidly-Heated 1045 Steel up to 1000 C, DOI 10.18434/MDS2-2393"
+  :files [{:path "MIDAS_steel_data_and_fits_to_A1.csv"
+           :url "https://data.nist.gov/od/ds/mds2-2393/MIDAS_steel_data_and_fits_to_A1.csv"
+           :sha256 "15aa7324d08ea5c2cb74d6d873fe87df006a7843feea5a2b9f2446bab946f05c"
+           :bytes 1268738 :split :calibration}]}
  {:dataset/id "aethron-cfd-pinn"
   :provider :hugging-face
   :repository "AethronPhantom/CFD"

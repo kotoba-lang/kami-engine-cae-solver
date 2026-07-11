@@ -49,6 +49,7 @@ jobs:
         run: |
           clojure -M:dataset -m verify-external-dataset aethron-cfd-pinn
           clojure -M:dataset -m verify-external-dataset nasa-tmr-sbse-ofi
+          clojure -M:dataset -m verify-external-dataset nist-midas-1045-dynamic-plasticity
 
       - name: Lint
         run: clojure -M:lint

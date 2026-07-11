@@ -52,4 +52,20 @@
         (when-not (and (pos? (:sample-count parsed))
                        (every? #(pos? (:absolute-uncertainty %)) (:samples parsed)))
           (throw (ex-info "NASA OFI semantic verification failed" {:path path :parsed parsed})))))
-    (prn (select-keys verified [:dataset/id :revision :license :status :content-checks]))))
+    (let [semantic
+          (when (= :nist-midas-1045 (:parser verified))
+            (let [path (get-in verified [:files 0 :path])
+                  parsed (dataset/parse-nist-midas-1045 (slurp (io/file root path)))
+                  report (dataset/calibration-report parsed 50.0)]
+              (when-not (and (pos? (:experiment-count parsed))
+                             (> (:sample-count parsed) 1000)
+                             (:passed? report))
+                (throw (ex-info "NIST MIDAS semantic verification failed"
+                                {:parsed (select-keys parsed [:experiment-count :sample-count])
+                                 :calibration report})))
+              {:parsed (select-keys parsed [:format :experiment-count :sample-count
+                                            :measurement-uncertainty])
+               :calibration report
+               :qualification (dataset/qualification-eligibility verified)}))]
+      (prn (cond-> (select-keys verified [:dataset/id :revision :license :status :content-checks])
+             semantic (assoc :semantic-verification semantic))))))
