@@ -33,6 +33,28 @@
     (is (= 0.001 (:maximum-absolute-uz frd)))
     (is (= 0.001 (:maximum-displacement frd)))))
 
+(def contact-log-sample
+  "Nonlinear geometric effects are taken into account\n increment 1 attempt 1 \n iteration 1\n Number of contact spring elements=28\n convergence\n Job finished\n")
+
+(def contact-dat-sample
+  (str "displacements (vx,vy,vz) for set TOP and time  1.0\n"
+       " 16 0.0 0.0 -0.2\n"
+       "total force (fx,fy,fz) for set TOP and time  1.0\n 0.0 0.0 -100.0\n"
+       "statistics for slave set UPPER_BOTTOM, master set LOWER_TOP and time  1.0\n"
+       "total surface force (fx,fy,fz) and moment about the origin (mx,my,mz)\n 0.0 0.0 100.0 0 0 0\n"
+       "area,  normal force (+ = tension) and shear force (size)\n 1.0 -100.0 0.0\n"))
+
+(deftest parses-and-fail-closes-nonlinear-contact
+  (let [result (evidence/calculix-contact-result
+                {:log-text contact-log-sample :dat-text contact-dat-sample
+                 :sta-text " 1 1 1 1 1.0 1.0 1.0\n"
+                 :cvg-text " 1 22 1 2 28 0.0 0.005\n"})]
+    (is (:nlgeom? result))
+    (is (= 28 (:maximum-contact-elements result)))
+    (is (= -100.0 (get-in result [:contact :normal-force])))
+    (is (:passed? (evidence/calculix-contact-checks result)))
+    (is (false? (:passed? (evidence/calculix-contact-checks (assoc result :nlgeom? false)))))))
+
 (def mpi-sample
   (str "KOTOBA_MPI_RANK rank=0 size=2 samples=5 partial=15.0\n"
        "KOTOBA_MPI_RANK rank=1 size=2 samples=5 partial=16.0\n"

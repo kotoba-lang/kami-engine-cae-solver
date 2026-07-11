@@ -34,6 +34,17 @@
              :static-axial-load]
   :excluded [:nonlinear-material :large-deformation :contact :plasticity :fracture
              :industrial-geometry :design-signoff]}
+ {:scope/id :external/calculix-nlgeom-contact-blocks
+  :scope {:solver :calculix :version "2.21" :dimension :3d :elements :c3d8
+          :contact :surface-to-surface-penalty :platform :linux-arm64}
+  :numerical-verification :convergence-and-force-balance-passed
+  :experimental-validation :missing
+  :software-quality :digest-and-file-hash-evidence
+  :release-status :not-release-qualified
+  :included [:nlgeom :finite-displacement :frictionless-contact :gap-closure
+             :incremental-newton-raphson :reaction-contact-force-balance]
+  :excluded [:friction :plasticity :hyperelasticity :self-contact :impact
+             :mesh-convergence :experimental-validation :design-signoff]}
  {:scope/id :cfd/nasa-sbse-rans
   :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump
           :quantity :skin-friction-coefficient}

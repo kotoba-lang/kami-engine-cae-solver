@@ -52,6 +52,62 @@
                              (apply max (map (fn [{:keys [ux uy uz]}]
                                                (Math/sqrt (+ (* ux ux) (* uy uy) (* uz uz)))) rows)))}))
 
+(defn calculix-contact-result
+  "Parse the final contact increment from CalculiX DAT/STA/CVG and solver log."
+  [{:keys [log-text dat-text sta-text cvg-text]}]
+  (let [numbers #"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?"
+        final-time (some->> (re-seq (re-pattern (str "(?m)^\\s*1\\s+\\d+\\s+\\d+\\s+\\d+\\s+(" numbers ")\\s+(" numbers ")")) sta-text)
+                            last second parse-number)
+        top-blocks (re-seq (re-pattern (str "(?ms)total force \\(fx,fy,fz\\) for set TOP and time\\s+(" numbers ")\\s*\\n\\s*("
+                                             numbers ")\\s+(" numbers ")\\s+(" numbers ")")) dat-text)
+        contact-blocks (re-seq (re-pattern (str "(?ms)statistics for slave set UPPER_BOTTOM, master set LOWER_TOP and time\\s+(" numbers ")"
+                                                 ".*?total surface force.*?\\n\\s*(" numbers ")\\s+(" numbers ")\\s+(" numbers ")"
+                                                 ".*?area,\\s+normal force.*?\\n\\s*(" numbers ")\\s+(" numbers ")\\s+(" numbers ")")) dat-text)
+        displacement-blocks (re-seq (re-pattern (str "(?ms)displacements \\(vx,vy,vz\\) for set TOP and time\\s+(" numbers ")"
+                                                      ".*?\\n\\s*16\\s+(" numbers ")\\s+(" numbers ")\\s+(" numbers ")")) dat-text)
+        top (when-let [[_ time fx fy fz] (last top-blocks)]
+              {:time (parse-number time) :force [(parse-number fx) (parse-number fy) (parse-number fz)]})
+        contact (when-let [[_ time fx fy fz area normal shear] (last contact-blocks)]
+                  {:time (parse-number time) :surface-force [(parse-number fx) (parse-number fy) (parse-number fz)]
+                   :area (parse-number area) :normal-force (parse-number normal) :shear-force (parse-number shear)})
+        displacement (when-let [[_ time ux uy uz] (last displacement-blocks)]
+                       {:time (parse-number time) :top-node-16 [(parse-number ux) (parse-number uy) (parse-number uz)]})
+        contact-counts (mapv (comp long parse-number second)
+                             (re-seq #"Number of contact spring elements=(\d+)" log-text))
+        increments (count (re-seq #"(?m)^ increment \d+ attempt \d+" log-text))
+        converged (count (re-seq #"(?m)^ convergence(?:;|$)" log-text))
+        iterations (count (re-seq #"(?m)^ iteration \d+" log-text))
+        final-cvg (last (re-seq (re-pattern (str "(?m)^\\s*1\\s+22\\s+1\\s+2\\s+(\\d+)\\s+(" numbers ")\\s+(" numbers ")")) cvg-text))]
+    {:format :calculix-contact-result-v1
+     :nlgeom? (boolean (re-find #"(?i)nonlinear geometric effects (?:are turned on|are taken into account)" log-text))
+     :job-finished? (boolean (re-find #"Job finished" log-text)) :final-time final-time
+     :increments increments :converged-increments converged :iterations iterations
+     :maximum-contact-elements (when (seq contact-counts) (apply max contact-counts))
+     :top top :contact contact :displacement displacement
+     :final-convergence (when final-cvg {:contact-elements (long (parse-number (nth final-cvg 1)))
+                                        :residual-force-percent (parse-number (nth final-cvg 2))
+                                        :correction-displacement-percent (parse-number (nth final-cvg 3))})}))
+
+(defn calculix-contact-checks [result]
+  (let [top-fz (get-in result [:top :force 2])
+        contact-fz (get-in result [:contact :surface-force 2])
+        force-error (when (and (number? top-fz) (number? contact-fz)
+                               (pos? (max (abs top-fz) (abs contact-fz))))
+                      (/ (abs (- (abs top-fz) (abs contact-fz)))
+                         (max (abs top-fz) (abs contact-fz))))
+        checks {:job-finished? (:job-finished? result) :nlgeom? (:nlgeom? result)
+                :final-time? (= 1.0 (:final-time result))
+                :contact-active? (pos? (or (:maximum-contact-elements result) 0))
+                :compression? (neg? (or (get-in result [:contact :normal-force]) 0.0))
+                :prescribed-displacement? (= -0.2 (get-in result [:displacement :top-node-16 2]))
+                :all-increments-converged? (= (:increments result) (:converged-increments result))
+                :final-contact-elements? (pos? (or (get-in result [:final-convergence :contact-elements]) 0))
+                :final-residual-force? (zero? (or (get-in result [:final-convergence :residual-force-percent]) ##Inf))
+                :force-balance-relative-error force-error :force-balance-tolerance 1.0e-6
+                :force-balance? (and (number? force-error) (<= force-error 1.0e-6))}
+        booleans (dissoc checks :force-balance-relative-error :force-balance-tolerance)]
+    {:checks checks :passed? (every? true? (vals booleans))}))
+
 (defn process-evidence
   [{:keys [solver solver-version image-digest command exit-code input-files result-files log-text result-text
            platform executed-at case-id]}]

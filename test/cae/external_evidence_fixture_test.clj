@@ -42,3 +42,16 @@
     (is (< (get-in run [:result :absolute-error]) 1.0e-12))
     (is (true? (:deterministic? fixture)))
     (is (apply = (map :sha256 (:output-files fixture))))))
+
+(deftest committed-calculix-contact-run-is-converged-and-balanced
+  (let [fixture (fixture "cae/evidence/calculix-2.21-nlgeom-contact-blocks.edn")]
+    (is (= :external-nonlinear-contact-verified (:status fixture)))
+    (is (true? (get-in fixture [:result :nlgeom?])))
+    (is (= 22 (get-in fixture [:result :increments])))
+    (is (= 22 (get-in fixture [:result :converged-increments])))
+    (is (= 28 (get-in fixture [:result :maximum-contact-elements])))
+    (is (= -0.2 (get-in fixture [:result :displacement :top-node-16 2])))
+    (is (neg? (get-in fixture [:result :contact :normal-force])))
+    (is (zero? (get-in fixture [:checks :force-balance-relative-error])))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (concat (:input-files fixture) (:result-files fixture))))))
