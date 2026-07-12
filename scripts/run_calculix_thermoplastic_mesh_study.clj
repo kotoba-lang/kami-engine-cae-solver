@@ -25,6 +25,14 @@
              {:id :medium :layers 4 :h-relative 2.0}
              {:id :fine :layers 8 :h-relative 1.0}])
 
+(def refined-levels [{:id :coarse :layers 4 :h-relative 4.0}
+                     {:id :medium :layers 8 :h-relative 2.0}
+                     {:id :fine :layers 16 :h-relative 1.0}])
+
+(def ultrafine-levels [{:id :coarse :layers 8 :h-relative 4.0}
+                       {:id :medium :layers 16 :h-relative 2.0}
+                       {:id :fine :layers 32 :h-relative 1.0}])
+
 (defn- run-level [root image steady-state? {:keys [id layers h-relative]}]
   (let [name (name id) dir (io/file root name) _ (.mkdirs dir)
         generated (mesh/coupled-input {:layers layers :steady-state? steady-state?})
@@ -49,8 +57,12 @@
      :passed? passed? :files (mapv #(file-evidence dir %) paths)}))
 
 (defn -main [& [mode]]
-  (let [steady-state? (= "steady" mode)
-        suffix (if steady-state? "steady" "transient")
+  (let [steady-state? (contains? #{"steady" "steady-refined" "steady-ultrafine"} mode)
+        refined? (= "steady-refined" mode)
+        ultrafine? (= "steady-ultrafine" mode)
+        selected-levels (cond ultrafine? ultrafine-levels refined? refined-levels :else levels)
+        suffix (cond ultrafine? "steady-ultrafine" refined? "steady-refined"
+                     steady-state? "steady" :else "transient")
         manifest (-> "cae/external-solvers.edn" io/resource slurp edn/read-string :calculix-2.21-arm64)
         image (:image manifest) digest (:image-digest manifest)
         root (.getCanonicalFile (io/file (or (System/getenv "CAE_EXTERNAL_RUN_DIR")
@@ -59,7 +71,7 @@
         inspect (exec-command ["docker" "image" "inspect" image "--format" "{{join .RepoDigests \"\\n\"}}"])
         _ (when-not (and (zero? (:exit inspect)) (.contains (:output inspect) digest))
             (throw (ex-info "CalculiX container digest mismatch" {:expected digest :actual (:output inspect)})))
-        run-levels (mapv #(run-level root image steady-state? %) levels)
+        run-levels (mapv #(run-level root image steady-state? %) selected-levels)
         study (evidence/thermoplastic-field-sensitivity
                {:levels run-levels :targets {:midpoint-temperature 0.02
                                               :maximum-heat-flux 0.05 :maximum-peeq 0.05}})
