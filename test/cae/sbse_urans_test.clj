@@ -17,3 +17,13 @@
         drifting (mapv (fn [i] {:time (* i 0.01) :value (+ 1.0 (* 0.1 i))}) (range 20))]
     (is (:passed? (urans/stationarity stable {})))
     (is (not (:passed? (urans/stationarity drifting {}))))))
+
+(deftest continuation-starts-from-latest-time
+  (let [{:keys [files]} (urans/case-files rans/default-experiment
+                                          (assoc urans/default-run :start-from :latest-time))]
+    (is (.contains (files "system/controlDict") "startFrom latestTime"))))
+
+(deftest turbulence-stability-dt-cap-is-fail-closed
+  (is (thrown? Exception
+               (urans/case-files rans/default-experiment
+                                 (assoc urans/default-run :maximum-delta-t-s 4.0e-5)))))

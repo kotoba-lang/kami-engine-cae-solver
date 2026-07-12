@@ -3,31 +3,36 @@
   (:require [cae.sbse-rans :as rans]))
 
 (def domain-length-m 2.7432)
+(def maximum-turbulence-stable-dt-s 2.0e-5)
 
 (defn flow-through-time-s [velocity-m-s] (/ domain-length-m velocity-m-s))
 
 (def default-run
   {:end-time-s 1.2 :average-start-s 0.4 :initial-delta-t-s 1.0e-6
-   :maximum-delta-t-s 2.0e-4 :maximum-courant 0.5 :write-interval-s 0.05})
+   :maximum-delta-t-s maximum-turbulence-stable-dt-s :maximum-courant 0.5 :write-interval-s 0.05
+   :start-from :start-time})
 
 (defn- header [object]
   (str "FoamFile\n{\n    format ascii;\n    class dictionary;\n    object " object ";\n}\n"))
 
 (defn validate-run! [{:keys [end-time-s average-start-s initial-delta-t-s maximum-delta-t-s
-                             maximum-courant write-interval-s] :as run}]
+                             maximum-courant write-interval-s start-from] :as run}]
   (when-not (and (every? pos? [end-time-s initial-delta-t-s maximum-delta-t-s
                                 maximum-courant write-interval-s])
                  (<= 0.0 average-start-s) (< average-start-s end-time-s)
-                 (<= initial-delta-t-s maximum-delta-t-s))
+                 (<= initial-delta-t-s maximum-delta-t-s)
+                 (<= maximum-delta-t-s maximum-turbulence-stable-dt-s)
+                 (#{:start-time :latest-time} start-from))
     (throw (ex-info "invalid SBSE URANS time controls" {:run run})))
   run)
 
 (defn dictionaries [_conditions run]
   (let [{:keys [end-time-s average-start-s initial-delta-t-s maximum-delta-t-s
-                maximum-courant write-interval-s]} (validate-run! run)]
+                maximum-courant write-interval-s start-from]} (validate-run! run)]
     {"system/controlDict"
      (str (header "controlDict")
-          "application pimpleFoam;\nstartFrom startTime;\nstartTime 0;\nstopAt endTime;\nendTime " end-time-s
+          "application pimpleFoam;\nstartFrom " (if (= :latest-time start-from) "latestTime" "startTime")
+          ";\nstartTime 0;\nstopAt endTime;\nendTime " end-time-s
           ";\ndeltaT " initial-delta-t-s ";\nadjustTimeStep yes;\nmaxCo " maximum-courant
           ";\nmaxDeltaT " maximum-delta-t-s ";\nwriteControl adjustableRunTime;\nwriteInterval " write-interval-s
           ";\npurgeWrite 3;\nwriteFormat ascii;\nrunTimeModifiable false;\nfunctions\n{\n"
