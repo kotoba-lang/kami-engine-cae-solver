@@ -136,6 +136,13 @@ FactoryNet are isolated in `cae/dataset-quarantine.edn`; the standard downloader
 rejects them before network access. Large experimental archives are opt-in:
 `scripts/download_hf_datasets.sh z24-bridge-processed` or
 `scripts/download_hf_datasets.sh mcc5-thu-motor`.
+The Z24 archive has now been downloaded in full and byte-verified. Its NPY
+semantics are also gated: little-endian float32 input must be exactly
+`[1530,27,6000]`, and little-endian int64 labels exactly `[1530]`, both
+C-order. Existing verified files are reused but rehashed on every invocation;
+a cached file cannot bypass integrity checking. Content and structure pass,
+while experimental qualification remains blocked by missing measurement
+uncertainty.
 
 `cae.vv` provides fail-closed evidence checks for a narrowly declared solver
 scope. A passing `:qualification-gate` requires all of the following, not just

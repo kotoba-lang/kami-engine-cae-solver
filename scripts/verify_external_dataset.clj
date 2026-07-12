@@ -6,7 +6,9 @@
             [clojure.java.io :as io])
   (:import [java.net URI]
            [java.net.http HttpClient HttpClient$Redirect HttpRequest HttpResponse$BodyHandlers]
+           [java.io RandomAccessFile]
            [java.nio.file Files StandardCopyOption]
+           [java.nio.charset StandardCharsets]
            [java.security MessageDigest]))
 
 (defn- hex [bytes]
@@ -22,15 +24,39 @@
     (hex (.digest digest))))
 
 (defn- download! [client url target]
-  (.mkdirs (.getParentFile target))
-  (let [temporary (io/file (str (.getPath target) ".part"))
-        request (-> (HttpRequest/newBuilder (URI/create url)) (.GET) (.build))
-        response (.send client request (HttpResponse$BodyHandlers/ofFile (.toPath temporary)))]
-    (when-not (= 200 (.statusCode response))
-      (throw (ex-info "external dataset download failed" {:url url :status (.statusCode response)})))
-    (Files/move (.toPath temporary) (.toPath target)
-                (into-array StandardCopyOption [StandardCopyOption/REPLACE_EXISTING]))
-    target))
+  (if (.isFile target)
+    target
+    (do
+      (.mkdirs (.getParentFile target))
+      (let [temporary (io/file (str (.getPath target) ".part"))
+            request (-> (HttpRequest/newBuilder (URI/create url)) (.GET) (.build))
+            response (.send client request (HttpResponse$BodyHandlers/ofFile (.toPath temporary)))]
+        (when-not (= 200 (.statusCode response))
+          (throw (ex-info "external dataset download failed" {:url url :status (.statusCode response)})))
+        (Files/move (.toPath temporary) (.toPath target)
+                    (into-array StandardCopyOption [StandardCopyOption/REPLACE_EXISTING]))
+        target))))
+
+(defn- npy-header [file]
+  (with-open [input (RandomAccessFile. file "r")]
+    (let [magic (byte-array 6)
+          _ (.readFully input magic)
+          _ (when-not (= [-109 78 85 77 80 89] (mapv int magic))
+              (throw (ex-info "invalid NPY magic" {:file (.getPath file)})))
+          major (.readUnsignedByte input)
+          minor (.readUnsignedByte input)
+          header-length (if (= 1 major)
+                          (+ (.readUnsignedByte input) (* 256 (.readUnsignedByte input)))
+                          (+ (.readUnsignedByte input) (* 256 (.readUnsignedByte input))
+                             (* 65536 (.readUnsignedByte input)) (* 16777216 (.readUnsignedByte input))))
+          bytes (byte-array header-length)
+          _ (.readFully input bytes)
+          header (String. bytes StandardCharsets/US_ASCII)
+          descriptor (second (re-find #"'descr':\s*'([^']+)'" header))
+          shape-text (second (re-find #"'shape':\s*\(([^)]*)\)" header))
+          shape (mapv #(Long/parseLong %) (re-seq #"\d+" (or shape-text "")))]
+      {:format :npy :version [major minor] :descriptor descriptor :shape shape
+       :fortran-order? (boolean (re-find #"'fortran_order':\s*True" header))})))
 
 (defn -main [& [dataset-id]]
   (let [catalog (-> "cae/datasets.edn" io/resource slurp edn/read-string)
@@ -64,7 +90,21 @@
           (throw (ex-info "NASA SBSE IGES semantic verification failed"
                           {:path path :summary summary})))))
     (let [semantic
-          (when (= :nist-midas-1045 (:parser verified))
+          (cond
+            (= :z24-npy (:parser verified))
+            (let [inputs (npy-header (io/file root "inputs.npy"))
+                  labels (npy-header (io/file root "labels.npy"))]
+              (when-not (and (= "<f4" (:descriptor inputs)) (= [1530 27 6000] (:shape inputs))
+                             (false? (:fortran-order? inputs))
+                             (= "<i8" (:descriptor labels)) (= [1530] (:shape labels))
+                             (false? (:fortran-order? labels)))
+                (throw (ex-info "Z24 NPY semantic verification failed"
+                                {:inputs inputs :labels labels})))
+              {:format :z24-processed-v1 :samples 1530 :sensors 27
+               :timesteps-per-sample 6000 :inputs inputs :labels labels
+               :qualification (dataset/qualification-eligibility verified)})
+
+            (= :nist-midas-1045 (:parser verified))
             (let [path (get-in verified [:files 0 :path])
                   parsed (dataset/parse-nist-midas-1045 (slurp (io/file root path)))
                   report (dataset/calibration-report parsed 50.0)]
@@ -77,6 +117,8 @@
               {:parsed (select-keys parsed [:format :experiment-count :sample-count
                                             :measurement-uncertainty])
                :calibration report
-               :qualification (dataset/qualification-eligibility verified)}))]
+               :qualification (dataset/qualification-eligibility verified)})
+
+            :else nil)]
       (prn (cond-> (select-keys verified [:dataset/id :revision :license :status :content-checks])
              semantic (assoc :semantic-verification semantic))))))
