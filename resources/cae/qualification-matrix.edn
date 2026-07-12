@@ -93,13 +93,14 @@
  {:scope/id :cfd/nasa-sbse-rans
   :scope {:physics :turbulent-separated-flow :geometry :smooth-body-separation-bump
           :quantity :skin-friction-coefficient}
-  :numerical-verification :missing
-  :experimental-validation :data-qualified-prediction-missing
+  :numerical-verification :single-coarse-grid-execution-passed-grid-convergence-missing
+  :experimental-validation :coarse-grid-prediction-rejected
   :validation-dataset "nasa-tmr-sbse-ofi"
-  :software-quality :not-implemented
+  :software-quality :digest-pinned-input-output-and-fail-closed-correlation
   :release-status :not-release-qualified
-  :included [:mach-0.05 :mach-0.1 :mach-0.2 :ofi-skin-friction]
-  :excluded [:unmeasured-conditions :other-geometries :design-signoff]}
+  :included [:mach-0.1 :ofi-skin-friction :k-omega-sst :coarse-grid-execution]
+  :excluded [:mach-0.05 :mach-0.2 :grid-converged-result :validated-skin-friction
+             :unmeasured-conditions :other-geometries :design-signoff]}
  {:scope/id :parallel/openmpi-four-rank-allreduce
   :scope {:runtime :openmpi :version "4.1.6" :ranks 4 :platform :linux-arm64
           :case :distributed-midpoint-integration}

@@ -192,6 +192,20 @@ non-orthogonality and 0.4456 maximum skewness. Every generated dictionary and
 `polyMesh` file is hashed. This is the coarse RANS grid; y+ suitability, grid
 convergence and experimental correlation remain separate required gates.
 
+`clojure -M:dataset -m run-openfoam-sbse-rans-evidence` now generates and
+executes a real 3D OpenFOAM v2506 k-omega SST case on that grid. The inlet uses
+the Mach 0.1 OFI header values (`Uinf=34.59 m/s`, `P=99 kPa`, `T=21.3 C`,
+`RH=81%`); moist-air density, Sutherland viscosity, Reynolds number, `k` and
+`omega` are derived and recorded, while turbulence intensity and length scale
+are explicitly marked as model assumptions. SIMPLE converges in 1,607
+iterations. The floor wall-function result spans y+=11.72--413.41, so the
+single coarse grid is not uniformly inside a defensible wall-function range.
+Nearest-face comparison against all 20 Mach 0.1 OFI samples gives Cf RMSE
+`0.0048801`, zero samples inside their experimental uncertainty, and 32.74 mm
+maximum sampling distance. Execution is qualified, but experimental
+correlation and industrial accuracy are deliberately rejected. Three-grid
+near-wall refinement is required before reevaluation.
+
 As a reproducible RANS baseline,
 `clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
 NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba
