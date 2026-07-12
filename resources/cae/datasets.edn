@@ -90,6 +90,7 @@
   :validation-scope {:structure "Z24 bridge" :quantity [:acceleration :damage-state]
                      :sensors 27 :loading [:ambient-vibration :controlled-loading]}
   :uncertainty {:status :not-provided-in-source}
+  :parser :z24-npy
   :citation "Z24 bridge progressive-damage structural-health-monitoring benchmark"
   :files [{:path "README.md" :sha256 "775903f7d9166ad9fa613ef94cd516aee692712d7d302d30b4111f46d851f75e"
            :bytes 8757 :split :documentation}
