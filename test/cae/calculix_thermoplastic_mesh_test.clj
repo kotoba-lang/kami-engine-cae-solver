@@ -11,3 +11,9 @@
     (is (re-find #"\*CONDUCTIVITY" (:input case)))
     (is (re-find #"\*PLASTIC" (:input case))))
   (is (thrown? Exception (mesh/coupled-input {:layers 3}))))
+
+(deftest steady-state-mode-is-explicit-not-inferred
+  (is (re-find #"\*COUPLED TEMPERATURE-DISPLACEMENT, STEADY STATE"
+               (:input (mesh/coupled-input {:layers 2 :steady-state? true}))))
+  (is (not (re-find #"STEADY STATE"
+                    (:input (mesh/coupled-input {:layers 2 :steady-state? false}))))))
