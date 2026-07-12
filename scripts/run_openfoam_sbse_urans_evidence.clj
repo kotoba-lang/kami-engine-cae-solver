@@ -124,6 +124,7 @@
                                                  (conj xs sample))) []))
         even-series (if (odd? (count series)) (subvec series 1) series)
         stationarity (when (>= (count even-series) 20) (urans/stationarity even-series {}))
+        temporal-coverage (urans/temporal-coverage run (:velocity-m-s (:conditions case)))
         mean-path (str latest "/wallShearStressMean")
         mean-file (io/file root mean-path)
         mean-present? (.isFile mean-file)
@@ -140,9 +141,12 @@
                 :turbulence-field-bounded? (< maximum-k 100.0)
                 :no-turbulence-bounding? (not (re-find #"bounding (?:k|omega)" log-text))}
         checks (assoc execution-checks
+                      :temporal-coverage-sufficient? (:passed? temporal-coverage)
                       :statistically-stationary? (boolean (:passed? stationarity))
+                      :pilot-temporal-coverage-waived? (boolean pilot?)
                       :pilot-stationarity-waived? (boolean pilot?))
         passed? (and (every? true? (vals execution-checks))
+                     (or pilot? (:passed? temporal-coverage))
                      (or pilot? (boolean (:passed? stationarity))))
         relative-path (fn [file] (str (.relativize (.toPath root) (.toPath file))))
         paths (concat (sort (keys (:files case))) ["system/blockMeshDict" "log.blockMesh"
@@ -171,6 +175,7 @@
                                (grid-study/enrich grid-controls))
                   :run (assoc run :mpi-ranks ranks) :conditions (:conditions case)
                   :result {:latest-time latest :maximum-courant max-co :wall-shear-samples (count series)
+                           :temporal-coverage temporal-coverage
                            :stationarity stationarity
                            :floor-yplus (when yplus {:minimum (nth yplus 0) :maximum (nth yplus 1) :average (nth yplus 2)})
                            :maximum-nonorthogonality-deg max-nonorth :maximum-skewness max-skew
@@ -179,6 +184,8 @@
                                  :maximum-turbulent-kinetic-energy-m2-s2 maximum-k}
                   :checks checks :files (mapv #(file-evidence root %) paths) :passed? passed?
                   :qualification {:execution (if passed? :qualified :rejected)
+                                  :temporal-coverage (if (:passed? temporal-coverage)
+                                                       :qualified :not-qualified)
                                   :statistical-stationarity (if (and stationarity (:passed? stationarity))
                                                                :qualified :not-qualified)
                                   :grid-convergence :not-qualified :experimental-validation :not-qualified

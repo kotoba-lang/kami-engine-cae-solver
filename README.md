@@ -250,6 +250,12 @@ qualifies execution only and is recorded separately from the failed
 stationarity check.  A trial at `4e-5 s` produced an unsafe turbulence growth;
 the generator therefore rejects requested maximum steps above `2e-5 s`.
 Longer physical time, rather than a looser numerical step, is required next.
+Production qualification now independently requires at least three domain
+flow-throughs before averaging and five flow-throughs in the averaging window.
+At 34.59 m/s one flow-through is 0.07931 s; the 0.01 s pilot therefore has only
+0.013 warm-up and 0.113 averaged flow-throughs.  A pilot may waive this cost for
+execution testing, but cannot obtain temporal-coverage or stationarity
+qualification from that waiver.
 
 As a reproducible RANS baseline,
 `clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
