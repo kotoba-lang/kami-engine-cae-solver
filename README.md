@@ -124,6 +124,19 @@ Datomic.  The committed schemas are `cae/maturity-datascript-schema.edn` and
 updating its evidence in the same EDN entity, making maturity changes
 reviewable rather than hidden in UI code.
 
+Hugging Face datasets are governed by the same fail-closed rule.
+`resources/cae/datasets.edn` contains only commercial-compatible, immutable
+40-character revisions with per-file SHA-256 and byte sizes. Z24 bridge
+vibration (MIT) and MCC5-THU motor current/vibration (MIT) are pinned as
+experimental candidates; missing measurement uncertainty keeps both outside
+industrial qualification until a defensible uncertainty model is sourced.
+HiLiftAeroML (CC-BY-4.0) is pinned only as a simulation reference, never as an
+experiment. Non-commercial Intel welding and SURF data plus license-unverified
+FactoryNet are isolated in `cae/dataset-quarantine.edn`; the standard downloader
+rejects them before network access. Large experimental archives are opt-in:
+`scripts/download_hf_datasets.sh z24-bridge-processed` or
+`scripts/download_hf_datasets.sh mcc5-thu-motor`.
+
 `cae.vv` provides fail-closed evidence checks for a narrowly declared solver
 scope. A passing `:qualification-gate` requires all of the following, not just
 a regression test:

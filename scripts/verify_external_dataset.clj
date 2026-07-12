@@ -34,8 +34,12 @@
 
 (defn -main [& [dataset-id]]
   (let [catalog (-> "cae/datasets.edn" io/resource slurp edn/read-string)
-        manifest (or (first (filter #(= (or dataset-id "aethron-cfd-pinn") (:dataset/id %)) catalog))
+        quarantine (-> "cae/dataset-quarantine.edn" io/resource slurp edn/read-string)
+        requested-id (or dataset-id "aethron-cfd-pinn")
+        manifest (or (first (filter #(= requested-id (:dataset/id %)) catalog))
+                     (first (filter #(= requested-id (:dataset/id %)) quarantine))
                      (throw (ex-info "unknown dataset id" {:id dataset-id :available (mapv :dataset/id catalog)})))
+        _ (dataset/require-standard-download! manifest)
         audited (dataset/audit-manifest manifest)
         root (io/file (or (System/getenv "HF_DATASETS_DIR") ".cache/huggingface-datasets") (:dataset/id audited))
         client (-> (HttpClient/newBuilder) (.followRedirects HttpClient$Redirect/ALWAYS) (.build))
