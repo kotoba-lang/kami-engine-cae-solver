@@ -16,6 +16,20 @@
     (is (< (get-in fixture [:log :maximum-courant]) 1.0))
     (is (= 400 (get-in fixture [:log :residual-records])))))
 
+(deftest committed-openfoam-rans-bump-converges-with-retained-mesh-warnings
+  (let [fixture (fixture "cae/evidence/openfoam-v2506-nasa-tmr-2d-bump-komega-sst.edn")
+        result (:result fixture)]
+    (is (= :external-rans-execution-verified (:status fixture)))
+    (is (= 1984 (:iterations result) (:converged-iterations result)))
+    (is (= 9920 (:residual-records result)))
+    (is (true? (:mesh-topology-ok? result)))
+    (is (= 2 (:geometry-warning-count result)))
+    (is (< (:maximum-nonorthogonality-deg result) 20.0))
+    (is (< (:maximum-skewness result) 0.1))
+    (is (< (get-in result [:bump-yplus :maximum]) 3.0))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (concat (:input-files fixture) (:result-files fixture))))))
+
 (deftest committed-calculix-run-is-hash-complete-and-analytic
   (let [fixture (fixture "cae/evidence/calculix-2.21-axial-unit-cube.edn")]
     (is (= :external-process-verified (:status fixture)))

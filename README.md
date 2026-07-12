@@ -176,6 +176,16 @@ produce a verified prediction for that geometry. `experimental-validation-check`
 performs normalized-RMSE and uncertainty-envelope coverage checks when such
 predictions become available.
 
+As a reproducible RANS baseline,
+`clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
+NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba
+statically expands the NASA analytic bump into 100 spline points, eliminating
+the tutorial's runtime C++ `codeStream`. The 13,770-cell solve converges in
+1,984 SIMPLE iterations and records Cp, wall shear and y+ with hash-complete
+evidence. `checkMesh -allGeometry` retains two boundary-layer quality warnings;
+this is a solver-execution baseline, not the 3D Boeing SBSE experiment and not
+an experimental validation claim.
+
 ## Real external solver execution
 
 `resources/cae/external-solvers.edn` pins OpenFOAM v2506 to an ARM64 OCI image

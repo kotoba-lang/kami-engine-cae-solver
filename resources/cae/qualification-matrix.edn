@@ -177,6 +177,17 @@
              :maximum-peeq-gci-below-5-percent :monotonic-peeq-refinement]
   :excluded [:other-geometries :multiaxial-loading :transient-accuracy
              :production-material :experimental-validation :design-signoff]}
+ {:scope/id :external/openfoam-nasa-tmr-2d-bump-komega-sst
+  :scope {:solver :openfoam :version :v2506 :case :nasa-tmr-2d-bump
+          :turbulence-model :k-omega-sst :cells 13770}
+  :numerical-verification :steady-rans-process-converged
+  :experimental-validation :not-applicable-to-verification-geometry
+  :software-quality :digest-input-output-hash-evidence
+  :release-status :not-release-qualified
+  :included [:static-cleanroom-spline :block-mesh :mesh-topology
+             :simple-convergence :wall-shear-stress :cp :y-plus]
+  :excluded [:geometry-quality-warning-free :grid-convergence
+             :boeing-speedbump-experiment :experimental-correlation :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete
