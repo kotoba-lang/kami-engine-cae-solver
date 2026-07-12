@@ -89,6 +89,10 @@
   :validation-role :independent
   :validation-scope {:structure "Z24 bridge" :quantity [:acceleration :damage-state]
                      :sensors 27 :loading [:ambient-vibration :controlled-loading]}
+  :source-declarations {:input-dtype :float64
+                        :sampling-frequency-hz :not-declared
+                        :sensor-layout :not-declared
+                        :label-semantics :not-declared}
   :uncertainty {:status :not-provided-in-source}
   :parser :z24-npy
   :citation "Z24 bridge progressive-damage structural-health-monitoring benchmark"

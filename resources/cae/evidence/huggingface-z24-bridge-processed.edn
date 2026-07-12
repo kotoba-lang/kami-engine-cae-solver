@@ -19,4 +19,7 @@
            :shape [1530] :fortran-order? false}}
  :qualification {:content :verified :semantic-structure :verified
                  :experimental-validation :not-qualified
-                 :reason :measurement-uncertainty-missing}}
+                 :reasons [:sampling-frequency-missing :sensor-layout-missing
+                           :damage-label-semantics-missing
+                           :measurement-uncertainty-missing
+                           :source-dtype-declaration-mismatch]}}

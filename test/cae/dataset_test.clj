@@ -54,6 +54,17 @@
     (is (some #{:validation :test} (map :split (:files manifest))))
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %)) (:files manifest)))))
 
+(deftest z24-fem-validation-refuses-underdocumented-processed-signals
+  (let [manifest (assoc (entry "z24-bridge-processed") :status :content-verified)
+        semantic {:inputs {:descriptor "<f4" :shape [1530 27 6000]}}
+        readiness (dataset/z24-fem-validation-readiness manifest semantic)]
+    (is (false? (:ready? readiness)))
+    (is (= [:sampling-frequency-missing :sensor-layout-missing
+            :damage-label-semantics-missing :measurement-uncertainty-missing
+            :source-dtype-declaration-mismatch]
+           (:reasons readiness)))
+    (is (= [:natural-frequency-hz :mode-shape] (:required-comparison readiness)))))
+
 (deftest malformed-or-floating-revision-is-rejected
   (testing "main is never an acceptable evidence revision"
     (is (thrown? Exception (dataset/audit-manifest (assoc (entry "aethron-cfd-pinn") :revision "main")))))
