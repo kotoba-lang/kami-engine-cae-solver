@@ -56,7 +56,19 @@
           shape-text (second (re-find #"'shape':\s*\(([^)]*)\)" header))
           shape (mapv #(Long/parseLong %) (re-seq #"\d+" (or shape-text "")))]
       {:format :npy :version [major minor] :descriptor descriptor :shape shape
-       :fortran-order? (boolean (re-find #"'fortran_order':\s*True" header))})))
+       :fortran-order? (boolean (re-find #"'fortran_order':\s*True" header))
+       :data-offset (.getFilePointer input)})))
+
+(defn- npy-little-endian-int64-values [file header]
+  (when-not (= "<i8" (:descriptor header))
+    (throw (ex-info "NPY array is not little-endian int64" {:file (.getPath file) :header header})))
+  (with-open [input (RandomAccessFile. file "r")]
+    (.seek input (:data-offset header))
+    (mapv (fn [_]
+            (reduce (fn [value shift]
+                      (bit-or value (bit-shift-left (long (.readUnsignedByte input)) shift)))
+                    0 (range 0 64 8)))
+          (range (reduce * (:shape header))))))
 
 (defn -main [& [dataset-id]]
   (let [catalog (-> "cae/datasets.edn" io/resource slurp edn/read-string)
@@ -93,7 +105,10 @@
           (cond
             (= :z24-npy (:parser verified))
             (let [inputs (npy-header (io/file root "inputs.npy"))
-                  labels (npy-header (io/file root "labels.npy"))]
+                  labels-file (io/file root "labels.npy")
+                  labels (npy-header labels-file)
+                  label-values (npy-little-endian-int64-values labels-file labels)
+                  label-histogram (into (sorted-map) (frequencies label-values))]
               (when-not (and (= "<f4" (:descriptor inputs)) (= [1530 27 6000] (:shape inputs))
                              (false? (:fortran-order? inputs))
                              (= "<i8" (:descriptor labels)) (= [1530] (:shape labels))
@@ -102,7 +117,10 @@
                                 {:inputs inputs :labels labels})))
               {:format :z24-processed-v1 :samples 1530 :sensors 27
                :timesteps-per-sample 6000 :inputs inputs :labels labels
-               :qualification (dataset/qualification-eligibility verified)})
+               :label-histogram label-histogram
+               :qualification (dataset/qualification-eligibility verified)
+               :fem-validation-readiness (dataset/z24-fem-validation-readiness verified
+                                                                                {:inputs inputs :labels labels})})
 
             (= :nist-midas-1045 (:parser verified))
             (let [path (get-in verified [:files 0 :path])

@@ -143,6 +143,12 @@ C-order. Existing verified files are reused but rehashed on every invocation;
 a cached file cannot bypass integrity checking. Content and structure pass,
 while experimental qualification remains blocked by missing measurement
 uncertainty.
+Deeper FEM-readiness inspection also found that the processed card omits sample
+frequency, sensor coordinates/directions and the physical meaning of its 17
+labels; it declares float64 although the pinned bytes are float32. Therefore
+`z24-fem-validation-readiness` rejects frequency and mode-shape correlation
+until all five provenance gaps are resolved from an authoritative original
+source. No normalized FFT bin is relabeled as Hz.
 
 `cae.vv` provides fail-closed evidence checks for a narrowly declared solver
 scope. A passing `:qualification-gate` requires all of the following, not just

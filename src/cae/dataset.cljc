@@ -180,6 +180,29 @@
     {:dataset/id (:dataset/id m) :eligible? (empty? reasons) :reasons reasons
      :scope (:validation-scope m)}))
 
+(defn z24-fem-validation-readiness
+  "Gate processed Z24 signals before they can be compared with FEM modes.
+  Byte-valid vibration arrays alone cannot establish frequencies or mode shapes."
+  [m semantic]
+  (let [scope (:validation-scope m)
+        reasons (cond-> []
+                  (not= :content-verified (:status m)) (conj :content-not-verified)
+                  (not= [1530 27 6000] (get-in semantic [:inputs :shape])) (conj :unexpected-input-shape)
+                  (not= "<f4" (get-in semantic [:inputs :descriptor])) (conj :unexpected-input-dtype)
+                  (not (finite-number? (:sampling-frequency-hz scope))) (conj :sampling-frequency-missing)
+                  (not (and (vector? (:sensor-layout scope)) (= 27 (count (:sensor-layout scope)))))
+                  (conj :sensor-layout-missing)
+                  (not (and (map? (:label-semantics scope)) (= 17 (count (:label-semantics scope)))))
+                  (conj :damage-label-semantics-missing)
+                  (or (not (map? (:uncertainty m)))
+                      (= :not-provided-in-source (get-in m [:uncertainty :status])))
+                  (conj :measurement-uncertainty-missing)
+                  (not= :float32 (get-in m [:source-declarations :input-dtype]))
+                  (conj :source-dtype-declaration-mismatch))]
+    {:dataset/id (:dataset/id m) :ready? (empty? reasons) :reasons reasons
+     :required-comparison [:natural-frequency-hz :mode-shape]
+     :scope scope}))
+
 (defn sample [{:keys [dataset-id split index coordinates fields target]}]
   {:dataset/id (str dataset-id) :split (keyword (or split :unknown)) :index (long (or index 0)) :coordinates (vec coordinates) :fields (into {} fields) :target target :format :kotoba-physics-sample-v1})
 
