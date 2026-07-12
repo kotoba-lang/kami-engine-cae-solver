@@ -275,6 +275,25 @@
                              (/ (:fine-gci baseline) (:fine-gci refined)))
      :checks checks :passed? (every? true? (vals checks))}))
 
+(defn thermoplastic-field-sensitivity
+  "Keep thermal, flux and plastic convergence decisions independent. Execution
+  evidence may pass while any non-monotonic/local response remains unqualified."
+  [{:keys [levels targets] :or {targets {:midpoint-temperature 0.02 :maximum-heat-flux 0.05
+                                         :maximum-peeq 0.05}}}]
+  (let [study (fn [metric]
+                (mesh-convergence-evidence
+                 {:levels (mapv #(assoc % :value (get % metric)) levels)}))
+        studies (into {} (map (fn [metric] [metric (study metric)]) (keys targets)))
+        qualified (into {} (map (fn [[metric result]]
+                                  [metric (and (:passed? result)
+                                               (<= (:fine-gci result) (get targets metric)))]) studies))
+        evidence-passed? (and (= 3 (count levels)) (every? :passed? levels))]
+    {:format :thermoplastic-field-sensitivity-v1 :levels levels :studies studies
+     :targets targets :qualified qualified :evidence-passed? evidence-passed?
+     :qualification-status (if (every? true? (vals qualified))
+                             :all-declared-responses-qualified
+                             :one-or-more-responses-not-qualified)}))
+
 (defn calculix-contact-pressure [dat-text]
   (let [section (last (re-seq #"(?ms)contact stress .*? and time\s+([0-9.Ee+-]+)\s*\n(.*?)\n\s*\n\s*statistics for slave set UPPER_BOTTOM" dat-text))
         time (some-> section second parse-number)

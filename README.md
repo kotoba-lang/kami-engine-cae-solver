@@ -274,6 +274,14 @@ the coupled kernels for this two-element reference case only; mesh convergence,
 transient accuracy, experimental correlation and production material validity
 remain excluded.
 
+`clojure -M:dataset -m run-calculix-thermoplastic-mesh-study` repeats the
+coupled case with 2, 4 and 8 through-thickness elements. All three real runs
+converge, but the midpoint temperature is `321.0526`, `289.1376`, then
+`292.6594` K; maximum heat flux is `35.90498`, `61.0368`, then `86.0267`; and
+maximum PEEQ is `0.003626556`, `0.006797741`, then `0.01966108`. The evidence
+therefore passes as a sensitivity audit while all three response qualifications
+fail closed. Solver increment convergence is not mesh convergence.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this
