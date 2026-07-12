@@ -19,7 +19,9 @@
   :files [{:path "LICENSE" :sha256 "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499" :bytes 7048 :split :documentation}
           {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp05.dat" :sha256 "b6a3540bc8f74533990457825e554fdea08e0f099e798fe98f5b884914bf72dc" :bytes 2591 :split :validation}
           {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp1.dat" :sha256 "a1fba5e9bb4eb079ab86d62ff3923ef9dfec271ffbd07393cb2a51f7864beb01" :bytes 2669 :split :validation}
-          {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp2.dat" :sha256 "299c72ff1ecc7ea97f57bccc5bc4a55ed36a67ab7fb9d19590f40a744f9a1810" :bytes 2515 :split :test}]}
+          {:path "Other_exp_Data/Speedbump_sep_exp/Data_OFI/OFI_bump36_Mp2.dat" :sha256 "299c72ff1ecc7ea97f57bccc5bc4a55ed36a67ab7fb9d19590f40a744f9a1810" :bytes 2515 :split :test}
+          {:path "Other_exp_Data/Speedbump_sep_exp/speedBump_v3a.igs" :sha256 "41733e6758111e983e1ba13e1c29e01b36d0217906e762086bc11263ed716c51" :bytes 20831013 :split :geometry}
+          {:path "Other_exp_Data/Speedbump_sep_exp/speedBump_v3b.igs" :sha256 "07219d3f50803577ac34f82a3df8d0e05910c985ed0c888737f66971ee54c88e" :bytes 18656973 :split :geometry}]}
  {:dataset/id "nist-midas-1045-dynamic-plasticity"
   :provider :direct-https
   :repository "NIST/MIDAS/mds2-2393"

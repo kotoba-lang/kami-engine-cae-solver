@@ -176,6 +176,14 @@ produce a verified prediction for that geometry. `experimental-validation-check`
 performs normalized-RMSE and uncertainty-envelope coverage checks when such
 predictions become available.
 
+The same immutable NASA revision now also pins the two as-designed MADCAP IGES
+halves (`speedBump_v3a.igs` and `speedBump_v3b.igs`), totaling 39,487,986
+bytes. Download verification checks their SHA-256, declared inch unit and NURBS
+surface records. `cae.sbse-geometry` independently implements the published
+3D Gaussian/error-function surface at L=0.9144 m and emits a deterministic
+triangulated STL. This establishes geometry provenance; it does not yet prove
+an as-built CMM match, volume-mesh quality or RANS accuracy.
+
 As a reproducible RANS baseline,
 `clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
 NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba
