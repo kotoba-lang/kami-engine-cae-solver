@@ -4,6 +4,13 @@
 
 The CAE solver **contract**: one `solve` multimethod dispatching on `[:solver :kind]`, so a case is answered by a portable reduced-order backend today and a dedicated high-fidelity host adapter tomorrow with no caller change.
 
+`cae.backend/backend` also implements the unified `kotoba.physics.contract` at
+`:high-fidelity`. Kami Engine and Network Isekai can use one immutable
+scene/case/result envelope for realtime physics, vehicle models and CAE.
+Existing `cae.solver/solve` methods remain compatible behind the adapter.
+Missing V&V evidence defaults to not qualified; execution never implies an
+industrial release.
+
 `cae.industrial` provides deterministic, zero-dependency reference backends:
 
 | kind | Coverage |
