@@ -106,6 +106,24 @@ solver verification or manufacturing release authority.
 
 ## Numerical V&V and qualification gates
 
+### Repo-wide maturity data
+
+`resources/cae/maturity.edn` is the versioned maturity SSoT for this solver and
+the connected `physics`, `physics-2d`, `kami-engine-vphysics`, `kami-engine`
+and `network-isekai` repositories.  It scores implementation, numerical
+verification, experimental validation, software quality and integration on a
+0--5 rubric, retains evidence links for every component and computes both a
+0--5 score and percentage.  The current evidence-backed aggregate is
+`2.40/5.00` (`48.0%`); this is not an industrial-readiness claim.
+
+Run `clojure -M:dataset -m report-maturity` to emit the full numeric EDN report.
+`cae.maturity/tx-data` emits portable entity maps accepted by DataScript and
+Datomic.  The committed schemas are `cae/maturity-datascript-schema.edn` and
+`cae/maturity-datomic-schema.edn`; `all-components-query` and
+`repo-summary-query` are reusable Datalog queries.  Updating a score requires
+updating its evidence in the same EDN entity, making maturity changes
+reviewable rather than hidden in UI code.
+
 `cae.vv` provides fail-closed evidence checks for a narrowly declared solver
 scope. A passing `:qualification-gate` requires all of the following, not just
 a regression test:
