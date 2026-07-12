@@ -58,16 +58,6 @@
   :citation "AethronPhantom, Navier-Stokes Simulated Flow Dataset for PINNs"
   :files [{:path "README.md" :sha256 "d241e22742de1f4c7e6c81d61b18a66889b28f976b7455b7f6c7ca1463b411db" :bytes 5700 :split :documentation}
           {:path "Flow.csv" :sha256 "42abf7055c3cf074376f1da391de7cd04c8e662ebefc6e79c7f421a1a99cdbbc" :bytes 2265767 :split :train}]}
- {:dataset/id "realpdebench"
-  :provider :hugging-face :repository "AI4Science-WestlakeU/RealPDEBench"
-  :revision "2c72295abbc99f60333c66062449c9eb36db698e"
-  :license :cc-by-nc-4.0
-  :license-uri "https://creativecommons.org/licenses/by-nc/4.0/"
-  :domain :multiphysics :data-origin :experiment :intended-use :experimental-validation
-  :commercial-use? false :validation-role :independent
-  :citation "RealPDEBench: paired real and simulated PDE trajectories"
-  :uncertainty {:status :dataset-dependent}
-  :files []}
  {:dataset/id "pdebench-1d-compressible"
   :provider :hugging-face :repository "pdebench/1D-Compressible-Navier-Stokes"
   :revision "a6d507e6b7369ad80bd2f0e4ebbdf169c2eda903"
@@ -88,4 +78,53 @@
   :license :mit :license-uri "https://opensource.org/license/mit"
   :domain :structural-fem :data-origin :simulation :intended-use :training-only
   :commercial-use? true :validation-role :external-simulation
-  :citation "CMU Design Research Collective, SFEM dataset" :files []}]
+  :citation "CMU Design Research Collective, SFEM dataset" :files []}
+ {:dataset/id "z24-bridge-processed"
+  :provider :hugging-face :repository "duan908/Z24-dataset-processed"
+  :revision "a6e7bac7e7292797289f6ef3915ced2327274c99"
+  :license :mit
+  :license-uri "https://huggingface.co/datasets/duan908/Z24-dataset-processed/blob/a6e7bac7e7292797289f6ef3915ced2327274c99/README.md"
+  :domain :structural-dynamics :data-origin :experiment
+  :intended-use :experimental-validation :commercial-use? true
+  :validation-role :independent
+  :validation-scope {:structure "Z24 bridge" :quantity [:acceleration :damage-state]
+                     :sensors 27 :loading [:ambient-vibration :controlled-loading]}
+  :uncertainty {:status :not-provided-in-source}
+  :citation "Z24 bridge progressive-damage structural-health-monitoring benchmark"
+  :files [{:path "README.md" :sha256 "775903f7d9166ad9fa613ef94cd516aee692712d7d302d30b4111f46d851f75e"
+           :bytes 8757 :split :documentation}
+          {:path "inputs.npy" :sha256 "56fb5923433e4b47cbd9c19ce079fc098f59d501b3385f9cb26636cc3928ef6e"
+           :bytes 991440128 :split :validation}
+          {:path "labels.npy" :sha256 "1929d7ff35c0473d3ddbd3c3c0c28894651163cc9dfcf85318d3d1fceef585f5"
+           :bytes 12368 :split :validation}]}
+ {:dataset/id "mcc5-thu-motor"
+  :provider :hugging-face :repository "Samlzy/MCC5-THU-Motor"
+  :revision "32f7f1343cc10389014dc4b14aeafc0aa2882663"
+  :license :mit
+  :license-uri "https://huggingface.co/datasets/Samlzy/MCC5-THU-Motor/blob/32f7f1343cc10389014dc4b14aeafc0aa2882663/README.md"
+  :domain :electromechanical-system :data-origin :experiment
+  :intended-use :experimental-validation :commercial-use? true
+  :validation-role :independent
+  :validation-scope {:machine "2.2 kW three-phase induction motor"
+                     :quantity [:three-phase-current :triaxial-vibration :key-phase]
+                     :operation [:variable-speed :variable-load :introduced-faults]}
+  :uncertainty {:status :not-provided-in-source}
+  :citation "Chen et al., Multi-mode Fault Diagnosis Datasets of Three-phase Asynchronous Motor, 2026"
+  :files [{:path "README.md" :sha256 "1342a56b8fa38ca299474b2a46e6ff1f23fef2186dabcad1adac8e487063f988"
+           :bytes 7661 :split :documentation}
+          {:path "MCC5-THU Motor_speed_circulation.zip"
+           :sha256 "af51b65470dbb50d96c1274c31d311adf14554f76385f2c6e313a299a8faf16f"
+           :bytes 6465876021 :split :validation}
+          {:path "MCC5-THU Motor_torque_circulation.zip"
+           :sha256 "cf5007378e4a28e6d7cc100bf56f144166cadb6a2607fbf38614bbfd0b8af0fb"
+           :bytes 6513549892 :split :test}]}
+ {:dataset/id "nvidia-hilift-aeroml-card"
+  :provider :hugging-face :repository "nvidia/HiLiftAeroML"
+  :revision "1c266d3869bc2968ff97d2107c9c3919be03ed32"
+  :license :cc-by-4.0 :license-uri "https://creativecommons.org/licenses/by/4.0/"
+  :domain :high-lift-cfd :data-origin :simulation
+  :intended-use :verification-reference :commercial-use? true
+  :validation-role :external-simulation
+  :citation "Ashton et al., HiLiftAeroML, 2026"
+  :files [{:path "README.md" :sha256 "d9ba35d9fb783beb4e9fca08495c1bc9c108a9c07c38528e52f21f66cf7e88c7"
+           :bytes 9203 :split :documentation}] }]

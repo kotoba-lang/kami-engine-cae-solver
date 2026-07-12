@@ -5,6 +5,7 @@
             [clojure.test :refer [deftest is testing]]))
 
 (def catalog (-> "cae/datasets.edn" io/resource slurp edn/read-string))
+(def quarantine (-> "cae/dataset-quarantine.edn" io/resource slurp edn/read-string))
 (defn entry [id] (first (filter #(= id (:dataset/id %)) catalog)))
 
 (deftest immutable-manifest-and-content-verification
@@ -23,12 +24,35 @@
                    (entry "aethron-cfd-pinn")
                    (into {} (map (fn [{:keys [path sha256 bytes]}] [path {:sha256 sha256 :bytes bytes}])
                                  (:files (entry "aethron-cfd-pinn")))))
-        real-noncommercial (assoc (entry "realpdebench") :status :content-verified)]
+        real-noncommercial (assoc (first quarantine) :status :content-verified
+                                                     :data-origin :experiment
+                                                     :intended-use :experimental-validation
+                                                     :validation-role :independent
+                                                     :uncertainty {:status :dataset-dependent}
+                                                     :files [])]
     (is (= [:not-validation-use :not-independent-experiment :not-independent-from-solver
             :measurement-uncertainty-missing :held-out-split-missing]
            (:reasons (dataset/qualification-eligibility synthetic))))
     (is (some #{:commercial-use-not-permitted}
               (:reasons (dataset/qualification-eligibility real-noncommercial))))))
+
+(deftest standard-download-profile-is-commercial-compatible-and-fail-closed
+  (is (every? #(true? (:standard-download? (dataset/download-policy %))) catalog))
+  (doseq [candidate quarantine]
+    (is (false? (:standard-download? (dataset/download-policy candidate))))
+    (is (thrown? Exception (dataset/require-standard-download! candidate))))
+  (is (= :research-only (:profile (dataset/download-policy (first quarantine)))))
+  (is (= :blocked-unverified (:profile (dataset/download-policy (last quarantine))))))
+
+(deftest pinned-hugging-face-experiments-have-immutable-byte-manifests
+  (doseq [id ["z24-bridge-processed" "mcc5-thu-motor"]
+          :let [manifest (dataset/audit-manifest (entry id))
+                urls (dataset/immutable-download-urls manifest)]]
+    (is (= :experiment (:data-origin manifest)))
+    (is (true? (:commercial-use? manifest)))
+    (is (every? #(.contains (:url %) (:revision manifest)) urls))
+    (is (some #{:validation :test} (map :split (:files manifest))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %)) (:files manifest)))))
 
 (deftest malformed-or-floating-revision-is-rejected
   (testing "main is never an acceptable evidence revision"

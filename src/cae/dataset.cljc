@@ -14,6 +14,28 @@
 (def ^:private revision-pattern #"^[0-9a-f]{40}$")
 (def ^:private validation-usages #{:verification-reference :experimental-validation})
 
+(defn download-policy
+  "Classify distribution/download policy independently from validation quality.
+  Standard OSS workflows accept only explicitly commercial-compatible data."
+  [m]
+  (cond
+    (true? (:commercial-use? m))
+    {:profile (if (= :experiment (:data-origin m)) :commercial-experiment :commercial-reference)
+     :standard-download? true :reason nil}
+
+    (false? (:commercial-use? m))
+    {:profile :research-only :standard-download? false :reason :noncommercial-license}
+
+    :else
+    {:profile :blocked-unverified :standard-download? false :reason :commercial-rights-unverified}))
+
+(defn require-standard-download! [m]
+  (let [policy (download-policy m)]
+    (when-not (:standard-download? policy)
+      (throw (ex-info "dataset is excluded from the standard OSS download profile"
+                      {:dataset/id (:dataset/id m) :policy policy})))
+    m))
+
 (defn- finite-number? [x]
   (and (number? x) #?(:clj (Double/isFinite (double x))
                       :cljs (js/Number.isFinite x))))
