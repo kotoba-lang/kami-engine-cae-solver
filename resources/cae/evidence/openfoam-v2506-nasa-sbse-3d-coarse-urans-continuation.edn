@@ -10,6 +10,12 @@
        :initial-delta-t-s 1.0E-6 :maximum-delta-t-s 3.0E-6
        :maximum-courant 0.3 :mpi-ranks 1}
  :result {:latest-time-s 0.01 :maximum-courant 0.0359725
+          :temporal-coverage {:flow-through-time-s 0.07930615784908934
+                              :warmup-flow-throughs 0.012609867310791048
+                              :average-flow-throughs 0.11348880579711944
+                              :limits {:minimum-warmup-flow-throughs 3.0
+                                       :minimum-average-flow-throughs 5.0}
+                              :passed? false}
           :field-bounds {:maximum-velocity-m-s 50.2491
                          :maximum-turbulent-kinetic-energy-m2-s2 16.5185}
           :floor-yplus {:minimum 0.0257525 :maximum 1.20291 :average 0.694572}
@@ -22,8 +28,10 @@
  :checks {:solver-ended? true :courant-below-limit? true
           :velocity-field-bounded? true :turbulence-field-bounded? true
           :no-turbulence-bounding? true :statistically-stationary? false
-          :pilot-stationarity-waived? true}
- :qualification {:execution :qualified :statistical-stationarity :not-qualified
+          :temporal-coverage-sufficient? false
+          :pilot-temporal-coverage-waived? true :pilot-stationarity-waived? true}
+ :qualification {:execution :qualified :temporal-coverage :not-qualified
+                 :statistical-stationarity :not-qualified
                  :grid-convergence :not-qualified
                  :experimental-validation :not-qualified
                  :industrial-accuracy :not-qualified}

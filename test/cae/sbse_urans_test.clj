@@ -27,3 +27,13 @@
   (is (thrown? Exception
                (urans/case-files rans/default-experiment
                                  (assoc urans/default-run :maximum-delta-t-s 4.0e-5)))))
+
+(deftest temporal-coverage-requires-warmup-and-averaging-flow-throughs
+  (let [velocity (:velocity-m-s (:conditions (rans/case-files rans/default-experiment)))
+        production (urans/temporal-coverage urans/default-run velocity)
+        pilot (urans/temporal-coverage {:average-start-s 0.001 :end-time-s 0.01} velocity)]
+    (is (:passed? production))
+    (is (>= (:warmup-flow-throughs production) urans/minimum-warmup-flow-throughs))
+    (is (>= (:average-flow-throughs production) urans/minimum-average-flow-throughs))
+    (is (not (:passed? pilot)))
+    (is (< (:average-flow-throughs pilot) 1.0))))

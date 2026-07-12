@@ -4,8 +4,37 @@
 
 (def domain-length-m 2.7432)
 (def maximum-turbulence-stable-dt-s 2.0e-5)
+(def minimum-warmup-flow-throughs 3.0)
+(def minimum-average-flow-throughs 5.0)
 
 (defn flow-through-time-s [velocity-m-s] (/ domain-length-m velocity-m-s))
+
+(defn temporal-coverage
+  "Assess whether transient removal and averaging span enough domain flow-throughs.
+  This is independent of statistical stationarity: both gates must pass."
+  ([run velocity-m-s]
+   (temporal-coverage run velocity-m-s
+                      {:minimum-warmup-flow-throughs minimum-warmup-flow-throughs
+                       :minimum-average-flow-throughs minimum-average-flow-throughs}))
+  ([{:keys [end-time-s average-start-s]}
+    velocity-m-s
+    {:keys [minimum-warmup-flow-throughs minimum-average-flow-throughs]}]
+   (when-not (and (pos? velocity-m-s) (pos? minimum-warmup-flow-throughs)
+                  (pos? minimum-average-flow-throughs))
+     (throw (ex-info "invalid SBSE URANS temporal coverage controls"
+                     {:velocity-m-s velocity-m-s
+                      :minimum-warmup-flow-throughs minimum-warmup-flow-throughs
+                      :minimum-average-flow-throughs minimum-average-flow-throughs})))
+   (let [flow-through-s (flow-through-time-s velocity-m-s)
+         warmup (/ average-start-s flow-through-s)
+         averaging (/ (- end-time-s average-start-s) flow-through-s)]
+     {:flow-through-time-s flow-through-s
+      :warmup-flow-throughs warmup
+      :average-flow-throughs averaging
+      :limits {:minimum-warmup-flow-throughs minimum-warmup-flow-throughs
+               :minimum-average-flow-throughs minimum-average-flow-throughs}
+      :passed? (and (>= warmup minimum-warmup-flow-throughs)
+                    (>= averaging minimum-average-flow-throughs))})))
 
 (def default-run
   {:end-time-s 1.2 :average-start-s 0.4 :initial-delta-t-s 1.0e-6
