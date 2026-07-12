@@ -265,6 +265,15 @@ qualifies maximum PEEQ only for this smooth gradient case. It does not cover
 notches, singularities, damage, fracture, another geometry, or an uncalibrated
 production material.
 
+`clojure -M:dataset -m run-calculix-thermoplastic-evidence` executes a real
+CalculiX 2.21 3D coupled temperature-displacement step with temperature-dependent
+elastic/plastic tables, thermal expansion and conduction. The pinned run solves
+an interior temperature between 293.15 K and 773.15 K, activates nonzero heat
+flux and plastic strain, and converges all 22 increments. It proves execution of
+the coupled kernels for this two-element reference case only; mesh convergence,
+transient accuracy, experimental correlation and production material validity
+remain excluded.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this
