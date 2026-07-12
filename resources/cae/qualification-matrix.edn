@@ -199,6 +199,17 @@
              :iges-inch-unit :nurbs-records :commercial-cc0-data]
   :excluded [:as-built-cmm-correlation :volume-mesh :rans-prediction
              :grid-convergence :experimental-cf-correlation :design-signoff]}
+ {:scope/id :external/openfoam-nasa-sbse-3d-volume-mesh
+  :scope {:solver :openfoam :version :v2506 :geometry :boeing-sbse-ideal
+          :dimension :3d :cells 27648 :topology :structured-hexahedral}
+  :numerical-verification :all-topology-and-geometry-checks-passed
+  :experimental-validation :not-applicable-to-mesh-generation
+  :software-quality :digest-generated-input-and-poly-mesh-hashes
+  :release-status :not-release-qualified
+  :included [:body-fitted-floor :test-section-sidewalls :single-region
+             :positive-cell-volume :mesh-ok]
+  :excluded [:boundary-layer-y-plus-target :grid-convergence :rans-solution
+             :as-built-cmm-geometry :experimental-correlation :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete

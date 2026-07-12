@@ -30,6 +30,18 @@
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (concat (:input-files fixture) (:result-files fixture))))))
 
+(deftest committed-sbse-3d-volume-mesh-is-complete-and-quality-checked
+  (let [fixture (fixture "cae/evidence/openfoam-v2506-nasa-sbse-3d-body-fitted-mesh.edn")]
+    (is (= :external-sbse-volume-mesh-verified (:status fixture)))
+    (is (= 27648 (get-in fixture [:mesh :cells]) (get-in fixture [:result :cells])))
+    (is (= 1 (get-in fixture [:result :regions])))
+    (is (pos? (get-in fixture [:result :minimum-cell-volume])))
+    (is (< (get-in fixture [:result :maximum-nonorthogonality-deg]) 40.0))
+    (is (< (get-in fixture [:result :maximum-skewness]) 2.0))
+    (is (true? (get-in fixture [:checks :mesh-ok?])))
+    (is (= 11 (count (:files fixture))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %)) (:files fixture)))))
+
 (deftest committed-calculix-run-is-hash-complete-and-analytic
   (let [fixture (fixture "cae/evidence/calculix-2.21-axial-unit-cube.edn")]
     (is (= :external-process-verified (:status fixture)))
