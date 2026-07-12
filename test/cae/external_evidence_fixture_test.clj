@@ -120,6 +120,17 @@
     (is (< 0.19 (get-in study [:gci :maximum-peeq]) 0.21))
     (is (= 18 (count (mapcat :files (:levels study)))))))
 
+(deftest ultrafine-thermoplastic-study-meets-declared-peeq-gci-target
+  (let [fixture (fixture "cae/evidence/calculix-2.21-thermoplastic-steady-ultrafine-gci.edn")
+        study (:study fixture)]
+    (is (= [8 16 32] (mapv :layers (:levels study))))
+    (is (apply < (map :maximum-peeq (:levels study))))
+    (is (every? true? (vals (:qualified study))))
+    (is (< (get-in study [:gci :maximum-peeq]) (get-in study [:targets :maximum-peeq])))
+    (is (< 0.9 (:peeq-observed-order study) 1.1))
+    (is (= :all-declared-responses-qualified (:qualification-status study)))
+    (is (= 18 (count (mapcat :files (:levels study)))))))
+
 (deftest committed-ultrafine-run-reduces-gci-below-declared-target
   (let [fixture (fixture "cae/evidence/calculix-2.21-nlgeom-cantilever-four-level-gci.edn")
         study (:study fixture) ultrafine (last (get-in study [:refined :levels]))]

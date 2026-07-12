@@ -289,6 +289,12 @@ three meshes, giving exact grid agreement and zero GCI for those thermal
 responses. Maximum PEEQ still changes from `0.003760695` to `0.005771508` to
 `0.006803207`, with `19.97%` fine GCI, so the plastic response remains rejected.
 
+`steady-ultrafine` advances the rolling study to 8, 16 and 32 layers. Maximum
+PEEQ is `0.006803207`, `0.007343157`, then `0.007619623`; observed order is
+`0.9657` and fine GCI is `4.7589%`, below the declared 5% target. Together with
+the zero-GCI thermal responses, all declared responses pass only for this
+steady, through-thickness reference geometry and synthetic material law.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this

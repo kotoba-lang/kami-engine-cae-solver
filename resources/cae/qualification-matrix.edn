@@ -166,6 +166,17 @@
              :independent-peeq-rejection]
   :excluded [:mesh-converged-peeq :transient-accuracy :plastic-dissipation-heating
              :experimental-validation :design-signoff]}
+ {:scope/id :external/calculix-thermoplastic-steady-ultrafine-gci
+  :scope {:solver :calculix :version "2.21" :analysis :steady-state
+          :physics :coupled-temperature-displacement :layers [8 16 32]}
+  :numerical-verification :all-declared-response-gci-targets-passed
+  :experimental-validation :missing
+  :software-quality :three-mesh-hash-evidence
+  :release-status :not-release-qualified
+  :included [:midpoint-temperature-zero-gci :heat-flux-zero-gci
+             :maximum-peeq-gci-below-5-percent :monotonic-peeq-refinement]
+  :excluded [:other-geometries :multiaxial-loading :transient-accuracy
+             :production-material :experimental-validation :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete
