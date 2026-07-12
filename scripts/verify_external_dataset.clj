@@ -1,6 +1,7 @@
 (ns verify-external-dataset
   "Download immutable external CAE evidence and verify every byte."
   (:require [cae.dataset :as dataset]
+            [cae.sbse-geometry :as sbse]
             [clojure.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.net URI]
@@ -51,7 +52,13 @@
               :let [parsed (dataset/parse-nasa-ofi (slurp (io/file root path)))]]
         (when-not (and (pos? (:sample-count parsed))
                        (every? #(pos? (:absolute-uncertainty %)) (:samples parsed)))
-          (throw (ex-info "NASA OFI semantic verification failed" {:path path :parsed parsed})))))
+          (throw (ex-info "NASA OFI semantic verification failed" {:path path :parsed parsed}))))
+      (doseq [{:keys [path split]} (:files verified) :when (= :geometry split)
+              :let [summary (sbse/iges-summary (slurp (io/file root path)))] ]
+        (when-not (and (:madcap? summary) (:inch-unit-declared? summary)
+                       (pos? (:rational-b-spline-surface-records summary)))
+          (throw (ex-info "NASA SBSE IGES semantic verification failed"
+                          {:path path :summary summary})))))
     (let [semantic
           (when (= :nist-midas-1045 (:parser verified))
             (let [path (get-in verified [:files 0 :path])

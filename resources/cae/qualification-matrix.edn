@@ -188,6 +188,17 @@
              :simple-convergence :wall-shear-stress :cp :y-plus]
   :excluded [:geometry-quality-warning-free :grid-convergence
              :boeing-speedbump-experiment :experimental-correlation :design-signoff]}
+ {:scope/id :cfd/nasa-sbse-geometry-readiness
+  :scope {:geometry :boeing-sbse-3d :L-m 0.9144 :source :nasa-tmr
+          :representation [:parametric-erf-gaussian :as-designed-iges-halves]}
+  :numerical-verification :parametric-surface-generation-tested
+  :experimental-validation :geometry-and-ofi-bytes-verified
+  :software-quality :immutable-revision-sha256-and-unit-audit
+  :release-status :not-release-qualified
+  :included [:streamwise-gaussian :spanwise-erf-shoulders :ascii-stl
+             :iges-inch-unit :nurbs-records :commercial-cc0-data]
+  :excluded [:as-built-cmm-correlation :volume-mesh :rans-prediction
+             :grid-convergence :experimental-cf-correlation :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete

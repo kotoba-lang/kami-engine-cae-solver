@@ -54,6 +54,13 @@
     (is (:eligible? eligibility))
     (is (empty? (:reasons eligibility)))))
 
+(deftest nasa-sbse-manifest-pins-both-as-designed-iges-halves
+  (let [files (:files (entry "nasa-tmr-sbse-ofi"))
+        geometry (filter #(= :geometry (:split %)) files)]
+    (is (= 2 (count geometry)))
+    (is (= 39487986 (reduce + (map :bytes geometry))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %)) geometry))))
+
 (deftest nist-midas-parser-retains-experimental-conditions-and-correlation
   (let [parsed (dataset/parse-nist-midas-1045
                 (str "Experiment Number:,4002.0\n"
