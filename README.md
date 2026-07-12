@@ -239,6 +239,18 @@ non-orthogonality from 32.50 to 76.67 degrees. Four-rank OpenMPI decomposition
 is supported and balance-audited, but was slower for the 41k-cell pilot; rank
 selection for the 140k/332k grids must be based on measured scaling.
 
+The coarse pilot has also been resumed from its written `0.005 s` checkpoint
+to `0.01 s`, proving `startFrom latestTime` continuation without regenerating
+the mesh or overwriting the initial fields.  A conservative `3e-6 s` maximum
+step kept maximum Courant number at 0.03597; the final fields remained bounded
+(`max|U|=50.2491 m/s`, `max(k)=16.5185 m2/s2`) with no turbulence bounding and
+floor y+=0.026--1.203.  The 96-sample wall-shear series is not stationary
+(11.22% half-window drift and 5.73% normalized slope), so the pilot waiver
+qualifies execution only and is recorded separately from the failed
+stationarity check.  A trial at `4e-5 s` produced an unsafe turbulence growth;
+the generator therefore rejects requested maximum steps above `2e-5 s`.
+Longer physical time, rather than a looser numerical step, is required next.
+
 As a reproducible RANS baseline,
 `clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
 NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba
