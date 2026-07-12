@@ -213,6 +213,19 @@ maximum sampling distance. Execution is qualified, but experimental
 correlation and industrial accuracy are deliberately rejected. Three-grid
 near-wall refinement is required before reevaluation.
 
+The next refinement family is defined in `cae.sbse-grid-study`: 41,472,
+139,968 and 331,776 cells with effective refinement ratios 1.5 and 1.333.
+Unlike an invalid single-block extreme grading attempt, each mesh uses a
+surface-following 50 mm inner block (40/60/80 cells, grading 500) connected to
+a smoothly graded outer block. The coarse first layer is about 17 micrometres
+with a 1.173 expansion ratio. Its FVM acceptance gate requires positive volume,
+one region, non-orthogonality below 40 degrees, skewness below 2 and no concave
+cells; high-aspect/tet-decomposition/determinant warnings are retained rather
+than hidden. Low-Re SST selects `nutLowReWallFunction`, bounded upwind transport
+and a potential-flow initializer. The first steady coarse attempt remained
+above the declared residual limits, so no grid-convergence or validation claim
+is made; transient URANS time averaging is the next required solve path.
+
 As a reproducible RANS baseline,
 `clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
 NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba
