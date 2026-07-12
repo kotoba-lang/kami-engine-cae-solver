@@ -165,6 +165,58 @@
                                                 (= (:maximum-peeq result) (:peeq final)))}]
     {:checks checks :passed? (every? true? (vals checks))}))
 
+(defn calculix-thermoplastic-result
+  "Parse the final state of the coupled temperature-displacement reference case."
+  [{:keys [log-text dat-text sta-text]}]
+  (let [n #"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?"
+        pattern (fn [s] (re-pattern s))
+        final-time (some->> (re-seq (pattern (str "(?m)^\\s*1\\s+\\d+\\s+\\d+\\s+\\d+\\s+(" n ")\\s+(" n ")")) sta-text)
+                            last second parse-number)
+        temperature-section (some->> (re-seq #"(?ms)temperatures for set ALL and time\s+([0-9.Ee+-]+)\s*\n(.*?)(?=\n\s*INCREMENT|\n\s*stresses|\z)" dat-text) last)
+        temperatures (if-not temperature-section []
+                         (mapv (fn [[_ node value]] {:node (long (parse-number node)) :temperature-K (parse-number value)})
+                               (re-seq #"(?m)^\s*(\d+)\s+([-+0-9.Ee]+)\s*$" (nth temperature-section 2))))
+        peeq-section (some->> (re-seq #"(?ms)equivalent plastic strain .*?for set SPECIMEN and time\s+([0-9.Ee+-]+)\s*\n(.*?)(?=\n\s*heat flux|\z)" dat-text) last)
+        peeq (if-not peeq-section []
+                 (mapv (fn [[_ element point value]] {:element (long (parse-number element))
+                                                       :point (long (parse-number point)) :peeq (parse-number value)})
+                       (re-seq #"(?m)^\s*(\d+)\s+(\d+)\s+([-+0-9.Ee]+)\s*$" (nth peeq-section 2))))
+        flux-section (some->> (re-seq #"(?ms)heat flux .*? for setSPECIMEN and time\s+([0-9.Ee+-]+)\s*\n(.*?)(?=\n\s*INCREMENT|\z)" dat-text) last)
+        fluxes (if-not flux-section []
+                   (mapv (fn [[_ element point qx qy qz]] {:element (long (parse-number element))
+                                                           :point (long (parse-number point))
+                                                           :flux [(parse-number qx) (parse-number qy) (parse-number qz)]})
+                         (re-seq #"(?m)^\s*(\d+)\s+(\d+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s+([-+0-9.Ee]+)\s*$" (nth flux-section 2))))
+        increments (count (re-seq #"(?m)^ increment \d+ attempt \d+" log-text))
+        converged (count (re-seq #"(?m)^ convergence(?:;|$)" log-text))]
+    {:format :calculix-thermoplastic-coupled-v1
+     :job-finished? (boolean (re-find #"Job finished" log-text))
+     :material-nonlinear? (boolean (re-find #"Nonlinear material laws are taken into account" log-text))
+     :heat-flux-kernel? (boolean (re-find #"heat flux calculation" log-text))
+     :nlgeom? (boolean (re-find #"Nonlinear geometric effects are taken into account" log-text))
+     :final-time final-time :increments increments :converged-increments converged
+     :temperatures temperatures :peeq peeq :heat-fluxes fluxes
+     :maximum-peeq (when (seq peeq) (apply max (map :peeq peeq)))
+     :maximum-absolute-heat-flux (when (seq fluxes) (apply max (mapcat #(map abs (:flux %)) fluxes)))}))
+
+(defn calculix-thermoplastic-checks [result]
+  (let [temperatures (map :temperature-K (:temperatures result))
+        middle (map :temperature-K (filter #(<= 5 (:node %) 8) (:temperatures result)))
+        checks {:job-finished? (:job-finished? result)
+                :material-nonlinear? (:material-nonlinear? result)
+                :heat-flux-kernel? (:heat-flux-kernel? result)
+                :nlgeom? (:nlgeom? result)
+                :final-time? (= 1.0 (:final-time result))
+                :all-increments-converged? (= (:increments result) (:converged-increments result))
+                :all-node-temperatures? (= 12 (count temperatures))
+                :boundary-temperatures? (and (= 293.15 (apply min temperatures))
+                                             (= 773.15 (apply max temperatures)))
+                :interior-temperature-solved? (and (= 4 (count middle))
+                                                   (every? #(< 293.15 % 773.15) middle))
+                :plasticity-active? (pos? (or (:maximum-peeq result) 0.0))
+                :conductive-flux-active? (pos? (or (:maximum-absolute-heat-flux result) 0.0))}]
+    {:checks checks :passed? (every? true? (vals checks))}))
+
 (defn calculix-tip-displacement [dat-text]
   (let [section (some->> (re-seq #"(?ms)displacements \(vx,vy,vz\) for set TIP and time\s+([0-9.Ee+-]+)\s*\n(.*?)(?=\n\s*INCREMENT|\z)" dat-text)
                          last)

@@ -132,6 +132,18 @@
              :published-model-correlation]
   :excluded [:independent-validation :uncertainty-aware-acceptance
              :production-material-card :design-signoff]}
+ {:scope/id :external/calculix-coupled-thermoplastic-gradient
+  :scope {:solver :calculix :version "2.21" :dimension :3d :element :c3d8
+          :physics :coupled-temperature-displacement :material :temperature-dependent-elastoplastic}
+  :numerical-verification :coupled-kernels-and-convergence-passed
+  :experimental-validation :missing
+  :software-quality :digest-and-file-hash-evidence
+  :release-status :not-release-qualified
+  :included [:nonlinear-geometry :temperature-dependent-elasticity
+             :temperature-dependent-plasticity :thermal-expansion
+             :conductive-heat-flux :interior-temperature-solution]
+  :excluded [:mesh-convergence :transient-accuracy :plastic-dissipation-heating
+             :nist-condition-correlation :experimental-validation :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete

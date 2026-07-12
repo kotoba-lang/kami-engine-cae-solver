@@ -82,6 +82,19 @@
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (mapcat :files (:levels study))))))
 
+(deftest committed-thermoplastic-run-solves-coupled-interior-state
+  (let [fixture (fixture "cae/evidence/calculix-2.21-coupled-thermoplastic-gradient.edn")
+        result (:result fixture)]
+    (is (= :external-thermoplastic-coupling-verified (:status fixture)))
+    (is (= 22 (:increments result) (:converged-increments result)))
+    (is (< (:minimum-temperature-K result) (:interior-temperature-K result)
+           (:maximum-temperature-K result)))
+    (is (pos? (:maximum-peeq result)))
+    (is (pos? (:maximum-absolute-heat-flux result)))
+    (is (true? (:heat-flux-kernel? result)))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (concat (:input-files fixture) (:result-files fixture))))))
+
 (deftest committed-ultrafine-run-reduces-gci-below-declared-target
   (let [fixture (fixture "cae/evidence/calculix-2.21-nlgeom-cantilever-four-level-gci.edn")
         study (:study fixture) ultrafine (last (get-in study [:refined :levels]))]
