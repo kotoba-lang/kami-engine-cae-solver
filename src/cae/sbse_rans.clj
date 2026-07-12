@@ -65,7 +65,9 @@
                  "dimensions [0 2 -1 0 0 0 0];\ninternalField uniform 0;\nboundaryField\n{\n"
                  "    inlet { type calculated; value uniform 0; }\n"
                  "    outlet { type calculated; value uniform 0; }\n"
-                 (wall-fields "type nutkWallFunction; value uniform 0;") "\n}\n")}))
+                 (wall-fields (str "type " (if (= :low-re (:wall-treatment conditions))
+                                              "nutLowReWallFunction" "nutkWallFunction")
+                                   "; value uniform 0;")) "\n}\n")}))
 
 (defn dictionaries [conditions]
   {"constant/transportProperties"
@@ -82,13 +84,17 @@
    "system/fvSchemes"
    (str (header "dictionary" "fvSchemes")
         "ddtSchemes { default steadyState; }\ngradSchemes { default cellLimited Gauss linear 1; }\n"
-        "divSchemes { default none; div(phi,U) bounded Gauss linearUpwind grad(U); div(phi,k) bounded Gauss upwind; div(phi,omega) bounded Gauss upwind; div((nuEff*dev2(T(grad(U))))) Gauss linear; }\n"
+        "divSchemes { default none; div(phi,U) bounded Gauss "
+        (if (= :low-re (:wall-treatment conditions)) "upwind" "linearUpwind grad(U)")
+        "; div(phi,k) bounded Gauss upwind; div(phi,omega) bounded Gauss upwind; div((nuEff*dev2(T(grad(U))))) Gauss linear; }\n"
         "laplacianSchemes { default Gauss linear limited 0.5; }\ninterpolationSchemes { default linear; }\nsnGradSchemes { default limited 0.5; }\nwallDist { method meshWave; }\n")
    "system/fvSolution"
    (str (header "dictionary" "fvSolution")
         "solvers\n{\n  p { solver GAMG; tolerance 1e-8; relTol 0.05; smoother GaussSeidel; }\n"
+        "  Phi { solver GAMG; tolerance 1e-8; relTol 0; smoother GaussSeidel; }\n"
         "  \"(U|k|omega)\" { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-8; relTol 0.05; }\n}\n"
-        "SIMPLE\n{\n  nNonOrthogonalCorrectors 1;\n  consistent yes;\n  residualControl { p 1e-5; U 1e-5; k 1e-5; omega 1e-5; }\n}\n"
+        "SIMPLE\n{\n  nNonOrthogonalCorrectors 1;\n  consistent yes"
+        ";\n  residualControl { p 1e-5; U 1e-5; k 1e-5; omega 1e-5; }\n}\n"
         "relaxationFactors { fields { p 0.3; } equations { U 0.7; k 0.7; omega 0.7; } }\n")})
 
 (defn case-files [experiment]

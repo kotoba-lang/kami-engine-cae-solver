@@ -20,6 +20,11 @@
       (is (= 4 (count (re-seq #"type noSlip" (files "0/U")))))
       (is (= 4 (count (re-seq #"type nutkWallFunction" (files "0/nut"))))))))
 
+(deftest wall-resolved-case-selects-low-re-treatment
+  (let [{:keys [files]} (rans/case-files (assoc rans/default-experiment :wall-treatment :low-re))]
+    (is (= 4 (count (re-seq #"type nutLowReWallFunction" (files "0/nut")))))
+    (is (not (re-find #"type nutkWallFunction" (files "0/nut"))))))
+
 (deftest experimental-coordinate-and-cf
   (is (< (Math/abs (rans/experimental-x->mesh-m 914.4)) 1e-12))
   (is (< (Math/abs (- 0.002 (rans/skin-friction-coefficient 1.1968841 34.59))) 1e-6)))
