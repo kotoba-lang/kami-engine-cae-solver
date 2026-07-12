@@ -95,6 +95,19 @@
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (concat (:input-files fixture) (:result-files fixture))))))
 
+(deftest committed-thermoplastic-study-rejects-all-unconverged-responses
+  (let [fixture (fixture "cae/evidence/calculix-2.21-thermoplastic-three-grid-sensitivity.edn")
+        study (:study fixture)]
+    (is (= :external-thermoplastic-sensitivity-verified (:status fixture)))
+    (is (true? (:evidence-passed? study)))
+    (is (= [2 4 8] (mapv :layers (:levels study))))
+    (is (= [321.0526 289.1376 292.6594] (mapv :midpoint-temperature (:levels study))))
+    (is (every? false? (vals (:qualified study))))
+    (is (= :one-or-more-responses-not-qualified (:qualification-status study)))
+    (is (= 18 (count (mapcat :files (:levels study)))))
+    (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
+                (mapcat :files (:levels study))))))
+
 (deftest committed-ultrafine-run-reduces-gci-below-declared-target
   (let [fixture (fixture "cae/evidence/calculix-2.21-nlgeom-cantilever-four-level-gci.edn")
         study (:study fixture) ultrafine (last (get-in study [:refined :levels]))]

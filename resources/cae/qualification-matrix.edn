@@ -144,6 +144,17 @@
              :conductive-heat-flux :interior-temperature-solution]
   :excluded [:mesh-convergence :transient-accuracy :plastic-dissipation-heating
              :nist-condition-correlation :experimental-validation :design-signoff]}
+ {:scope/id :external/calculix-thermoplastic-mesh-sensitivity
+  :scope {:solver :calculix :version "2.21" :dimension :3d
+          :physics :coupled-temperature-displacement :refinement :through-thickness}
+  :numerical-verification :runs-passed-responses-not-converged
+  :experimental-validation :missing
+  :software-quality :three-mesh-hash-evidence
+  :release-status :not-release-qualified
+  :included [:two-four-eight-layer-refinement :independent-response-gates
+             :midpoint-temperature-sensitivity :heat-flux-sensitivity :peeq-sensitivity]
+  :excluded [:mesh-converged-temperature :mesh-converged-heat-flux
+             :mesh-converged-peeq :transient-accuracy :experimental-validation :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete
