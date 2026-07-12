@@ -226,6 +226,19 @@ and a potential-flow initializer. The first steady coarse attempt remained
 above the declared residual limits, so no grid-convergence or validation claim
 is made; transient URANS time averaging is the next required solve path.
 
+`clojure -M:dataset -m run-openfoam-sbse-urans-evidence` implements that path
+with adaptive PIMPLE, Euler time integration, strict final pressure correction,
+low-Re SST, `fieldAverage`, area-averaged wall-shear time series and optional
+OpenMPI decomposition. A short 0.002 s coarse-grid pilot completes 200 stable
+steps with maximum Co 0.01685 and floor y+=0.031--1.051 (average 0.766). The
+last two equal Cf windows differ by 0.83%, but their normalized slope is 2.65%
+against a 2% limit, so execution and wall resolution pass while statistical
+stationarity remains not qualified. `renumberMesh` is deliberately prohibited
+for this high-aspect layered grid: it increased computed maximum
+non-orthogonality from 32.50 to 76.67 degrees. Four-rank OpenMPI decomposition
+is supported and balance-audited, but was slower for the 41k-cell pilot; rank
+selection for the 140k/332k grids must be based on measured scaling.
+
 As a reproducible RANS baseline,
 `clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
 NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba

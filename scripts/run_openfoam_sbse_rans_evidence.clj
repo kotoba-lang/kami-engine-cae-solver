@@ -53,9 +53,9 @@
         command (str "source /opt/OpenFOAM-v2506/etc/bashrc; cd /work; set -e; "
                      (when-not reuse?
                        (str "blockMesh > log.blockMesh 2>&1; "
-                            "renumberMesh -overwrite -constant > log.renumberMesh 2>&1; "
+                            (when-not level "renumberMesh -overwrite -constant > log.renumberMesh 2>&1; ")
                             "checkMesh -allTopology -allGeometry -constant > log.checkMesh 2>&1; "
-                            (when level "potentialFoam -writePhi > log.potentialFoam 2>&1; ")
+                            (when level "potentialFoam > log.potentialFoam 2>&1; ")
                             "simpleFoam > log.simpleFoam 2>&1; "))
                      "latest=$(foamListTimes -latestTime); "
                      "simpleFoam -postProcess -func wallShearStress -latestTime > log.postProcess 2>&1; "
@@ -115,7 +115,8 @@
         passed? (every? true? (vals checks))
         envelope {:case-id (str "openfoam-v2506-nasa-sbse-3d-" (name (:level grid-controls)) "-komega-sst")
                   :solver :openfoam :solver-version (:version manifest) :image-digest digest
-                  :command (cond-> ["blockMesh" "renumberMesh" "checkMesh"]
+                  :command (cond-> ["blockMesh"]
+                             (nil? level) (conj "renumberMesh") true (conj "checkMesh")
                              level (conj "potentialFoam") true (conj "simpleFoam"))
                   :platform "linux/arm64-container" :executed-at (str (Instant/now))
                   :experiment-source {:dataset-id "nasa-tmr-sbse-ofi"
@@ -132,7 +133,9 @@
                                                         :minimum-first-layer-height-m :maximum-first-layer-height-m
                                                         :cell-expansion-ratio])))
                   :input-files (mapv #(file-evidence root %) input-paths)
-                  :result-files (mapv #(file-evidence root %) (concat ["log.blockMesh" "log.renumberMesh" "log.checkMesh"]
+                  :result-files (mapv #(file-evidence root %) (concat ["log.blockMesh"]
+                                                                     (when-not level ["log.renumberMesh"])
+                                                                     ["log.checkMesh"]
                                                                      (when level ["log.potentialFoam"])
                                                                      [
                                                                        "log.simpleFoam" "log.postProcess" "log.writeCellCentres"

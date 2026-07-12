@@ -1,0 +1,19 @@
+(ns cae.sbse-urans-test
+  (:require [cae.sbse-rans :as rans]
+            [cae.sbse-urans :as urans]
+            [clojure.test :refer [deftest is]]))
+
+(deftest urans-case-has-adaptive-pimple-and-averaging
+  (let [{:keys [files]} (urans/case-files rans/default-experiment)
+        control (files "system/controlDict")]
+    (is (.contains control "application pimpleFoam"))
+    (is (.contains control "adjustTimeStep yes"))
+    (is (.contains control "type fieldAverage"))
+    (is (.contains (files "system/fvSchemes") "default Euler"))
+    (is (.contains (files "0/nut") "nutLowReWallFunction"))))
+
+(deftest statistical-stationarity-gate
+  (let [stable (mapv (fn [i] {:time (* i 0.01) :value (+ 2.0 (* 0.0001 i))}) (range 20))
+        drifting (mapv (fn [i] {:time (* i 0.01) :value (+ 1.0 (* 0.1 i))}) (range 20))]
+    (is (:passed? (urans/stationarity stable {})))
+    (is (not (:passed? (urans/stationarity drifting {}))))))
