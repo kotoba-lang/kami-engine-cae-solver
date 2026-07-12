@@ -282,6 +282,13 @@ maximum PEEQ is `0.003626556`, `0.006797741`, then `0.01966108`. The evidence
 therefore passes as a sensitivity audit while all three response qualifications
 fail closed. Solver increment convergence is not mesh convergence.
 
+Passing `steady` to the same runner selects CalculiX's explicit `STEADY STATE`
+coupled procedure. This removes the transient time-discretization effect:
+midpoint temperature is `518.2081` K and maximum heat flux is `19.2` on all
+three meshes, giving exact grid agreement and zero GCI for those thermal
+responses. Maximum PEEQ still changes from `0.003760695` to `0.005771508` to
+`0.006803207`, with `19.97%` fine GCI, so the plastic response remains rejected.
+
 For a host-native validated solver, use `cae.adapter` with
 `:solver {:kind :external-backend}`. The descriptor records backend, version,
 domain, input format, command/MPI transport and result provenance, while this

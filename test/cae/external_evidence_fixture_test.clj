@@ -108,6 +108,18 @@
     (is (every? #(re-matches #"[0-9a-f]{64}" (:sha256 %))
                 (mapcat :files (:levels study))))))
 
+(deftest steady-thermoplastic-study-qualifies-thermal-but-not-plastic-response
+  (let [fixture (fixture "cae/evidence/calculix-2.21-thermoplastic-steady-three-grid-sensitivity.edn")
+        study (:study fixture)]
+    (is (= :steady-state (:analysis-mode fixture)))
+    (is (= [518.2081 518.2081 518.2081] (mapv :midpoint-temperature (:levels study))))
+    (is (= [19.2 19.2 19.2] (mapv :maximum-heat-flux (:levels study))))
+    (is (true? (get-in study [:qualified :midpoint-temperature])))
+    (is (true? (get-in study [:qualified :maximum-heat-flux])))
+    (is (false? (get-in study [:qualified :maximum-peeq])))
+    (is (< 0.19 (get-in study [:gci :maximum-peeq]) 0.21))
+    (is (= 18 (count (mapcat :files (:levels study)))))))
+
 (deftest committed-ultrafine-run-reduces-gci-below-declared-target
   (let [fixture (fixture "cae/evidence/calculix-2.21-nlgeom-cantilever-four-level-gci.edn")
         study (:study fixture) ultrafine (last (get-in study [:refined :levels]))]

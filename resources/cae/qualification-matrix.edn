@@ -155,6 +155,17 @@
              :midpoint-temperature-sensitivity :heat-flux-sensitivity :peeq-sensitivity]
   :excluded [:mesh-converged-temperature :mesh-converged-heat-flux
              :mesh-converged-peeq :transient-accuracy :experimental-validation :design-signoff]}
+ {:scope/id :external/calculix-thermoplastic-steady-mesh-study
+  :scope {:solver :calculix :version "2.21" :analysis :steady-state
+          :physics :coupled-temperature-displacement :refinement :through-thickness}
+  :numerical-verification :thermal-responses-exact-grid-agreement
+  :experimental-validation :missing
+  :software-quality :three-mesh-hash-evidence
+  :release-status :not-release-qualified
+  :included [:steady-state :midpoint-temperature-zero-gci :heat-flux-zero-gci
+             :independent-peeq-rejection]
+  :excluded [:mesh-converged-peeq :transient-accuracy :plastic-dissipation-heating
+             :experimental-validation :design-signoff]}
  {:scope/id :package/general-industrial
   :scope {:package :kami-engine-cae-solver}
   :numerical-verification :incomplete

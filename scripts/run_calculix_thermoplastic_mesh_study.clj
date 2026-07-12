@@ -25,9 +25,9 @@
              {:id :medium :layers 4 :h-relative 2.0}
              {:id :fine :layers 8 :h-relative 1.0}])
 
-(defn- run-level [root image {:keys [id layers h-relative]}]
+(defn- run-level [root image steady-state? {:keys [id layers h-relative]}]
   (let [name (name id) dir (io/file root name) _ (.mkdirs dir)
-        generated (mesh/coupled-input {:layers layers})
+        generated (mesh/coupled-input {:layers layers :steady-state? steady-state?})
         _ (spit (io/file dir (str name ".inp")) (:input generated))
         run (exec-command ["docker" "run" "--rm" "-v" (str (.getCanonicalPath dir) ":/work") image "-i" name])
         _ (spit (io/file dir "log.ccx") (:output run))
@@ -48,22 +48,25 @@
      :maximum-peeq (:maximum-peeq result) :increments (:increments result)
      :passed? passed? :files (mapv #(file-evidence dir %) paths)}))
 
-(defn -main [& _]
-  (let [manifest (-> "cae/external-solvers.edn" io/resource slurp edn/read-string :calculix-2.21-arm64)
+(defn -main [& [mode]]
+  (let [steady-state? (= "steady" mode)
+        suffix (if steady-state? "steady" "transient")
+        manifest (-> "cae/external-solvers.edn" io/resource slurp edn/read-string :calculix-2.21-arm64)
         image (:image manifest) digest (:image-digest manifest)
         root (.getCanonicalFile (io/file (or (System/getenv "CAE_EXTERNAL_RUN_DIR")
-                                             ".cache/external-solvers/calculix-thermoplastic-mesh")))
+                                             (str ".cache/external-solvers/calculix-thermoplastic-mesh-" suffix))))
         _ (delete-tree! root) _ (.mkdirs root)
         inspect (exec-command ["docker" "image" "inspect" image "--format" "{{join .RepoDigests \"\\n\"}}"])
         _ (when-not (and (zero? (:exit inspect)) (.contains (:output inspect) digest))
             (throw (ex-info "CalculiX container digest mismatch" {:expected digest :actual (:output inspect)})))
-        run-levels (mapv #(run-level root image %) levels)
+        run-levels (mapv #(run-level root image steady-state? %) levels)
         study (evidence/thermoplastic-field-sensitivity
                {:levels run-levels :targets {:midpoint-temperature 0.02
                                               :maximum-heat-flux 0.05 :maximum-peeq 0.05}})
-        envelope {:case-id "calculix-2.21-thermoplastic-three-grid-sensitivity"
+        envelope {:case-id (str "calculix-2.21-thermoplastic-" suffix "-three-grid-sensitivity")
                   :solver :calculix :solver-version (:version manifest) :image-digest digest
                   :platform "linux/arm64-container" :executed-at (str (Instant/now))
+                  :analysis-mode (if steady-state? :steady-state :transient)
                   :study study :passed? (:evidence-passed? study)
                   :status (if (:evidence-passed? study) :external-thermoplastic-sensitivity-verified
                               :external-thermoplastic-sensitivity-rejected)}]

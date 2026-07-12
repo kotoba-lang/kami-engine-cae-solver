@@ -239,14 +239,15 @@
     :or {refinement-ratio 2.0 safety-factor 1.25}}]
   (let [[f1 f2 f3] (map :value levels)
         d12 (- f1 f2) d23 (- f2 f3)
-        monotonic? (pos? (* d12 d23))
-        p (when (and monotonic? (not (zero? d23)))
+        exact? (and (zero? d12) (zero? d23))
+        monotonic? (or exact? (pos? (* d12 d23)))
+        p (when (and monotonic? (not exact?) (not (zero? d23)))
             (/ (Math/log (abs (/ d12 d23))) (Math/log refinement-ratio)))
         denominator (when p (- (Math/pow refinement-ratio p) 1.0))
-        extrapolated (when (and denominator (not (zero? denominator)))
-                       (+ f3 (/ (- f3 f2) denominator)))
-        relative-error (when (and denominator (not (zero? denominator)) (not (zero? f3)))
-                         (/ (abs (/ (- f3 f2) f3)) denominator))
+        extrapolated (if exact? f3 (when (and denominator (not (zero? denominator)))
+                                     (+ f3 (/ (- f3 f2) denominator))))
+        relative-error (if exact? 0.0 (when (and denominator (not (zero? denominator)) (not (zero? f3)))
+                                        (/ (abs (/ (- f3 f2) f3)) denominator)))
         gci (when relative-error (* safety-factor relative-error))
         h-values (mapv :h-relative levels)
         h-ratios (mapv #(/ %1 %2) h-values (rest h-values))
@@ -255,11 +256,13 @@
                 :consistent-refinement? (and (= 2 (count h-ratios))
                                              (every? #(< (abs (- % refinement-ratio)) 1.0e-12)
                                                      h-ratios))
-                :monotonic? monotonic? :positive-order? (and p (pos? p))
+                :monotonic? monotonic?
+                :positive-order? (or exact? (and p (pos? p)))
                 :finite-gci? (and gci (not #?(:clj (Double/isNaN gci) :cljs (js/isNaN gci)))
-                                  (pos? gci))}]
+                                  (not (neg? gci)))}]
     {:format :three-grid-gci-v1 :levels levels :refinement-ratio refinement-ratio
-     :safety-factor safety-factor :observed-order p :richardson-extrapolated extrapolated
+     :safety-factor safety-factor :observed-order p :exact-grid-agreement? exact?
+     :richardson-extrapolated extrapolated
      :fine-relative-error-estimate relative-error :fine-gci gci
      :checks checks :passed? (every? true? (vals checks))}))
 

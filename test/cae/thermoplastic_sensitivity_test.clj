@@ -17,3 +17,13 @@
     (is (true? (get-in result [:qualified :maximum-heat-flux])))
     (is (false? (get-in result [:qualified :maximum-peeq])))
     (is (= :one-or-more-responses-not-qualified (:qualification-status result)))))
+
+(deftest exact-grid-agreement-is-zero-gci-not-an-undefined-study
+  (let [levels (mapv (fn [h] {:h-relative h :passed? true
+                              :midpoint-temperature 518.2081
+                              :maximum-heat-flux 19.2 :maximum-peeq 0.01}) [4.0 2.0 1.0])
+        result (evidence/thermoplastic-field-sensitivity {:levels levels})]
+    (is (true? (get-in result [:qualified :midpoint-temperature])))
+    (is (true? (get-in result [:qualified :maximum-heat-flux])))
+    (is (zero? (get-in result [:studies :midpoint-temperature :fine-gci])))
+    (is (true? (get-in result [:studies :midpoint-temperature :exact-grid-agreement?])))))
