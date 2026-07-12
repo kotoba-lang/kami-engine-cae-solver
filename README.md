@@ -184,6 +184,14 @@ surface records. `cae.sbse-geometry` independently implements the published
 triangulated STL. This establishes geometry provenance; it does not yet prove
 an as-built CMM match, volume-mesh quality or RANS accuracy.
 
+`clojure -M:dataset -m run-openfoam-sbse-mesh-evidence` generates a body-fitted
+3D structured-Hex test-section mesh directly from that parametric surface. The
+first accepted grid contains 27,648 cells and passes full OpenFOAM topology and
+geometry checks with one region, positive volume, 34.21-degree maximum
+non-orthogonality and 0.4456 maximum skewness. Every generated dictionary and
+`polyMesh` file is hashed. This is the coarse RANS grid; y+ suitability, grid
+convergence and experimental correlation remain separate required gates.
+
 As a reproducible RANS baseline,
 `clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
 NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba
