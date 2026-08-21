@@ -1,5 +1,5 @@
 (ns cae.vv-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [cae.solver :as solver]
             [cae.vv :as vv]))
 
@@ -79,3 +79,55 @@
     (is (= :validated-for-declared-scope (:status passing)))
     (is (false? (:passed? failing)))
     (is (= 0.0 (:coverage failing)))))
+
+;; ---------------------------------------------------------------------
+;; Method of manufactured solutions (2026-08-22)
+;;
+;; `:manufactured-solution` was named in a benchmark record's
+;; `:implementation` and dispatched nowhere — the verification axis of this
+;; repo cited a method it could not run.
+;; ---------------------------------------------------------------------
+
+(deftest manufactured-solution-recovers-second-order-accuracy
+  (let [r (solver/solve {:solver {:kind :manufactured-solution} :family :sine})]
+    (testing "the source term is derived from u, and the solver converges at the rate its discretisation promises"
+      (is (= :computed (:status r)))
+      (is (:passed? r))
+      (is (< (Math/abs (- (:observed-order r) 2.0)) 0.15)))
+
+    (testing "the error actually falls — an order computed from a flat sequence means nothing"
+      (is (apply > (:l2-errors r))))
+
+    (testing "and it is reported per refinement, not just at the end"
+      (is (= 3 (count (:observed-orders r))))
+      (is (every? #(< (Math/abs (- % 2.0)) 0.2) (:observed-orders r))))))
+
+(deftest a-solver-that-is-exact-says-so-instead-of-reporting-a-number
+  ;; Linear elements are nodally exact for this cubic, so its errors sit at
+  ;; 1e-17..1e-15 against a peak of order 1 — pure round-off, whose ratios give
+  ;; an "observed order" of -2.38. Reporting that as a failure would call the
+  ;; strongest possible result the worst one.
+  (let [r (solver/solve {:solver {:kind :manufactured-solution} :family :polynomial})]
+    (is (= :exact-to-round-off (:status r)))
+    (is (:round-off-limited? r))
+    (is (:passed? r))
+    (testing "no order is invented below the floor"
+      (is (nil? (:observed-order r)))
+      (is (nil? (:observed-orders r))))
+    (testing "and the floor it compared against is reported"
+      (is (pos? (:round-off-floor r)))
+      (is (every? #(< % (:round-off-floor r)) (:l2-errors r))))))
+
+(deftest manufactured-solution-refuses-what-it-cannot-read-an-order-from
+  (testing "meshes that are not successive halvings"
+    (is (thrown-with-msg?
+         #?(:clj clojure.lang.ExceptionInfo :cljs js/Error) #"twice the previous"
+         (solver/solve {:solver {:kind :manufactured-solution} :element-counts [8 12]}))))
+  (testing "a single mesh, from which no order can be read at all"
+    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+                 (solver/solve {:solver {:kind :manufactured-solution} :element-counts [16]}))))
+  (testing "an unknown family, named against the ones that exist"
+    (let [d (try (solver/solve {:solver {:kind :manufactured-solution} :family :no-such})
+                 nil (catch #?(:clj Exception :cljs js/Error) e (ex-data e)))]
+      (is (= :no-such (:family d)))
+      (is (= [:polynomial :sine] (:known d))))))
