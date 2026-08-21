@@ -128,6 +128,116 @@
        :algebraic-residual-norm residual-norm :residual-history [rhs-norm residual-norm]
        :fidelity :verification-benchmark :status :computed})))
 
+(def manufactured-solutions
+  "Manufactured solutions for the 1-D bar `-EA u'' = f`, each with the source
+   term derived analytically FROM the chosen `u` rather than the other way
+   round. That is the whole point of the method: you do not go looking for a
+   problem whose answer you happen to know, you pick the answer and compute the
+   problem that has it.
+
+   Both vanish at x=0 and x=L, so the Dirichlet conditions the assembly already
+   imposes are exact. Two families rather than one, because a single sinusoid
+   cannot separate a correct solver from one tuned to sinusoids — and the
+   existing `:axial-bar-fe` benchmark is exactly that shape."
+  {:sine {:describes "u = sin(k pi x / L)"}
+   :polynomial {:describes "u = x(L-x)(x+L), a cubic no sinusoidal solver can fake"}})
+
+(defn- mms-u [family L x k]
+  (case family
+    :sine (Math/sin (/ (* k Math/PI x) L))
+    :polynomial (* x (- L x) (+ x L))))
+
+(defn- mms-f
+  "The source term that MAKES `mms-u` the exact solution of -EA u'' = f."
+  [family L x k ea]
+  (case family
+    :sine (* ea (Math/pow (/ (* k Math/PI) L) 2) (Math/sin (/ (* k Math/PI x) L)))
+    ;; u = x(L-x)(x+L) = L^2 x - x^3  ->  u'' = -6x  ->  f = -EA u'' = 6 EA x
+    :polynomial (* 6.0 ea x)))
+
+(defn- bar-solve
+  "Nodal displacements of the fixed-fixed bar under nodal loads `h*f(x_i)`."
+  [n h ea loads]
+  (let [stiffness (/ ea h) unknowns (dec n)]
+    (vec (concat [0.0]
+                 (tridiagonal-solve (vec (repeat (dec unknowns) (- stiffness)))
+                                    (vec (repeat unknowns (* 2 stiffness)))
+                                    (vec (repeat (dec unknowns) (- stiffness)))
+                                    loads)
+                 [0.0]))))
+
+(defmethod solver/solve :manufactured-solution
+  [{:keys [family element-counts length-m area-m2 youngs-modulus-Pa wave-number
+           order-tolerance]}]
+  (let [fam (or family :sine)
+        counts (vec (or element-counts [8 16 32 64]))
+        L (double (or length-m 1.0))
+        area (double (or area-m2 0.01))
+        e (double (or youngs-modulus-Pa 2.0e11))
+        ea (* e area)
+        k (double (or wave-number 1.0))
+        tol (double (or order-tolerance 0.15))]
+    (when-not (contains? manufactured-solutions fam)
+      (throw (ex-info "unknown manufactured solution family"
+                      {:family family :known (vec (sort (keys manufactured-solutions)))})))
+    (when-not (and (>= (count counts) 2)
+                   (every? #(and (integer? %) (>= % 4) (even? %)) counts)
+                   (every? #(= 2.0 (double %)) (map / (rest counts) counts)))
+      (throw (ex-info (str "manufactured-solution needs at least two even element counts >= 4,"
+                           " each twice the previous — the observed order of accuracy is read"
+                           " off successive halvings of h and cannot be inferred from an"
+                           " arbitrary sequence")
+                      {:element-counts counts})))
+    (let [runs (mapv (fn [n]
+                       (let [h (/ L n)
+                             xs (mapv #(* % h) (range (inc n)))
+                             loads (mapv (fn [i] (* h (mms-f fam L (nth xs i) k ea))) (range 1 n))
+                             uh (bar-solve n h ea loads)
+                             ue (mapv #(mms-u fam L % k) xs)
+                             err (Math/sqrt (/ (reduce + (map (fn [a b] (let [d (- a b)] (* d d)))
+                                                              uh ue))
+                                               (inc n)))]
+                         {:elements n :h h :l2-error err
+                          :peak-exact (reduce max (map #(Math/abs %) ue))}))
+                     counts)
+          peak (reduce max (map :peak-exact runs))
+          ;; An order of accuracy can only be read while DISCRETISATION error
+          ;; dominates. Linear elements are nodally exact for this cubic, so its
+          ;; errors sit at 1e-17..1e-15 against a peak of order 1 — pure
+          ;; round-off, whose ratios gave an "observed order" of -2.38. Reporting
+          ;; that as a failure would call the strongest possible result the
+          ;; worst one. Below the floor the answer is not a number, and saying
+          ;; so is the whole discipline.
+          floor (* peak 1.0e-12)
+          round-off? (every? #(< (:l2-error %) floor) runs)
+          orders (when-not round-off?
+                   (mapv (fn [[a b]]
+                           (/ (Math/log (/ (:l2-error a) (:l2-error b))) (Math/log 2.0)))
+                         (partition 2 1 runs)))
+          observed (when orders (peek orders))
+          passed? (if round-off? true (<= (Math/abs (- observed 2.0)) tol))]
+      {:solver :manufactured-solution
+       :family fam
+       :describes (get-in manufactured-solutions [fam :describes])
+       :model :linear-fe-1d-bar
+       :element-counts counts
+       :runs runs
+       :l2-errors (mapv :l2-error runs)
+       :observed-orders orders
+       :observed-order observed
+       :expected-order 2.0
+       :order-tolerance tol
+       :round-off-floor floor
+       :round-off-limited? round-off?
+       :passed? passed?
+       ;; The source term is derived FROM u, so a solver that is wrong in the
+       ;; same way as its own benchmark cannot hide here: the error would not
+       ;; fall at the rate the discretisation promises.
+       :fidelity :verification-benchmark
+       :status (cond round-off? :exact-to-round-off
+                     passed? :computed
+                     :else :order-of-accuracy-not-met)})))
+
 (defmethod solver/solve :axial-bar-vv-study
   [{:keys [element-counts length-m area-m2 youngs-modulus-Pa distributed-load-N-m
            gci-tolerance benchmark-tolerance evidence]}]
