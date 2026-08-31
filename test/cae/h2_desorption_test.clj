@@ -1,7 +1,7 @@
 (ns cae.h2-desorption-test
   "Generic metal-hydride desorption equilibrium (van't Hoff) contract.
   Every test supplies its own hydride data — no Mg/MgH2 constants live here."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.test :refer [deftest is]]
             [cae.industrial]
             [cae.solver :as cae]))
 
