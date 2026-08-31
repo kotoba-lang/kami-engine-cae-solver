@@ -415,9 +415,90 @@
                                          {:id (:id station) :utilization (/ busy makespan)})
                                        stations (:busy schedule))})))
 
+;; ---------------------------------------------------------------------------
+;; Hydrogen storage: metal-hydride desorption equilibrium (van't Hoff)
+;;
+;; System context: the magnesium-hydrogen-PEMFC electric-drive boundary
+;; (scripts/hermes-magnesium-systems-bots/system-scope.edn) needs a
+;; cartridge/reactor desorption-equilibrium contract upstream of thermal
+;; control, pressure/leak CAE, and fuel-cell H2 supply sizing. This contract
+;; is GENERIC: the hydride identity, enthalpy and entropy are caller-supplied
+;; with mandatory provenance — no Mg/MgH2 constants are baked in here.
+
+(def ^:private gas-constant-J-molK 8.31446261815324)
+;; CODATA 2018 exact molar gas constant (defined via k_B and N_A). This is a
+;; physical unit constant, not a material property, so it is the only default
+;; thermodynamic number in this contract.
+
+(defn- nonblank-string! [input k]
+  (let [v (get input k)]
+    (when-not (and (string? v) (re-find #"\S" v))
+      (throw (ex-info "industrial CAE input must be a non-blank string"
+                      {:field k :value v})))))
+
+(defn h2-desorption
+  "Metal-hydride hydrogen desorption equilibrium (van't Hoff) screening model.
+
+  Case keys:
+  - `:temperature-K` — bed temperature (required, positive).
+  - `:enthalpy-desorption-J-mol` — ΔH per mol H2 (required, positive).
+  - `:entropy-desorption-J-molK` — ΔS per mol H2 (required, positive).
+  - `:thermo-source` — non-blank provenance string for ΔH/ΔS (required).
+    The contract FAILS CLOSED without it: unprovenanced thermodynamic data
+    must never enter a case.
+  - `:reference-pressure-Pa` — standard-state pressure (default 1e5 Pa).
+  - Optional capacity group (all-or-none): `:hydride-mass-kg`,
+    `:molar-mass-hydride-kg-mol`, `:molar-mass-h2-kg-mol`,
+    `:h2-per-formula-unit` (moles H2 released per mol hydride).
+
+  Returns the equilibrium plateau pressure via
+  `ln(P/P°) = ΔS/R − ΔH/(R·T)` plus, when the capacity group is given, the
+  stoichiometric fully-released H2 mass. Generic hydride only: an actual
+  Mg/MgH2 card (ΔH, ΔS, molar masses, validity range) is a caller-provided,
+  provenance-carrying input — this repo measures none."
+  [{:keys [temperature-K enthalpy-desorption-J-mol entropy-desorption-J-molK
+           thermo-source reference-pressure-Pa hydride-mass-kg
+           molar-mass-hydride-kg-mol molar-mass-h2-kg-mol h2-per-formula-unit]
+    :or {reference-pressure-Pa 100000.0}
+    :as input}]
+  (positive! input [:temperature-K :enthalpy-desorption-J-mol
+                    :entropy-desorption-J-molK])
+  (positive! {:reference-pressure-Pa reference-pressure-Pa}
+             [:reference-pressure-Pa])
+  (nonblank-string! input :thermo-source)
+  (let [capacity-keys [:hydride-mass-kg :molar-mass-hydride-kg-mol
+                       :molar-mass-h2-kg-mol :h2-per-formula-unit]
+        given (filter #(some? (get input %)) capacity-keys)]
+    (when-not (or (empty? given) (= (count given) (count capacity-keys)))
+      (throw (ex-info "hydride capacity group must be given all-or-none"
+                      {:given given :required capacity-keys})))
+    (when (seq given)
+      (positive! input capacity-keys))
+    (let [r gas-constant-J-molK
+          ln-p (+ (/ entropy-desorption-J-molK r)
+                  (- (/ enthalpy-desorption-J-mol (* r temperature-K))))
+          equilibrium-pressure-Pa (* reference-pressure-Pa (Math/exp ln-p))
+          h2-mass-kg (when (seq given)
+                       (* hydride-mass-kg
+                          (/ (* h2-per-formula-unit molar-mass-h2-kg-mol)
+                             molar-mass-hydride-kg-mol)))]
+      (merge (screening-result input :h2-desorption :van-t-hoff-plateau
+                               [:van-t-hoff-equilibrium :single-plateau
+                                :ideal-gas :standard-state-reference-pressure
+                                :equilibrium-not-kinetics])
+             {:temperature-K temperature-K
+              :thermo-source thermo-source
+              :enthalpy-desorption-J-mol enthalpy-desorption-J-mol
+              :entropy-desorption-J-molK entropy-desorption-J-molK
+              :reference-pressure-Pa reference-pressure-Pa
+              :equilibrium-pressure-Pa equilibrium-pressure-Pa
+              :equilibrium-lnPP-ref ln-p
+              :capacity-h2-mass-kg h2-mass-kg}))))
+
 (defmethod cae/solve :cfd [case] (cfd case))
 (defmethod cae/solve :fem [case] (fem case))
 (defmethod cae/solve :process [case] (process case))
 (defmethod cae/solve :materials [case] (materials case))
 (defmethod cae/solve :emag [case] (emag case))
 (defmethod cae/solve :production-des [case] (production-des case))
+(defmethod cae/solve :h2-desorption [case] (h2-desorption case))
