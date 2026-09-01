@@ -60,12 +60,6 @@
       (throw (ex-info "h2-kinetics input must be a non-blank string"
                       {:field k :value v})))))
 
-(defn- unit-interval! [input k]
-  (let [v (get input k)]
-    (when-not (and (finite-number? v) (<= 0.0 (double v) 1.0))
-      (throw (ex-info "h2-kinetics input must be in [0, 1]"
-                      {:field k :value v})))))
-
 (defn h2-desorption-kinetics
   "Transient first-order metal-hydride desorption screening over one window
   of constant temperature and pressure.
