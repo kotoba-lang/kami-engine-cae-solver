@@ -17,6 +17,7 @@ industrial release.
 | --- | --- |
 | `:cfd` | duct/ventilation flow, straight/fitting pressure-loss breakdown, fan power, heat removal, steady combustion heat source |
 | `:fem` | axial bar / cantilever beam deformation, stress, first mode, fatigue life |
+| `:fatigue` | Miner's-rule cumulative damage over a caller-supplied load spectrum (Basquin SN curve + optional Goodman mean-stress correction); the SN curve must be supplied by the caller |
 | `:process` | welding heat input, casting energy/Chvorinov solidification time, rolling force |
 | `:materials` | constant-rate / Arrhenius-JMAK phase transformation and resulting hardness |
 | `:emag` | three-phase motor power/torque/losses and induction-heating workpiece temperature rise |

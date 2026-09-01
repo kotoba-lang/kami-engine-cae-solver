@@ -4,7 +4,7 @@
             [cae.solver :as cae]))
 
 (deftest industrial-backends-register-on-the-shared-contract
-  (is (every? cae/registered? [:cfd :fem :process :materials :emag :production-des])))
+  (is (every? cae/registered? [:cfd :fem :process :materials :emag :production-des :fatigue])))
 
 (deftest cfd-ventilation-has-physical-monotonicity
   (let [base {:solver {:kind :cfd} :flow-m3-s 1.0 :duct-diameter-m 0.4 :duct-length-m 10.0}
@@ -43,6 +43,65 @@
     (is (= :SI (:units r)))
     (is (= "vent-01" (:case/id r)))
     (is (seq (:assumptions r)))))
+
+(deftest fatigue-miner-damage-is-line-in-the-caller-supplied-spectrum
+  (let [;; Synthetic caller-supplied SN curve — the contract invents no
+        ;; material constants, so the test must supply its own.
+        curve {:basquin-b -0.1 :basquin-C 1.0e12}
+        block {:solver {:kind :fatigue} :spectrum
+               [{:stress-range-Pa 100e6 :cycles 1000.0}
+                {:stress-range-Pa 200e6 :cycles 100.0}]
+               :case/id "spectrum-01"}
+        r (cae/solve (merge curve block))
+        [b1 b2] (:blocks r)]
+    (is (= "spectrum-01" (:case/id r)))
+    (is (= :reduced-order (:fidelity r)))
+    (is (= :screening-only (:status r)))
+    (is (= :SI (:units r)))
+    (is (seq (:assumptions r)))
+    (is (every? pos? (map :life-cycles (:blocks r))))
+    ;; Single-block life must reproduce the Basquin law exactly.
+    (is (= (Math/pow (/ 200e6 1.0e12) -10.0) (:life-cycles b2)))
+    (is (= (/ 100.0 (:life-cycles b2)) (:damage-fraction b2)))
+    ;; Miner damage is additive and pass count is its reciprocal.
+    (is (= (+ (:damage-fraction b1) (:damage-fraction b2)) (:damage-per-pass r)))
+    (is (= (/ 1.0 (:damage-per-pass r)) (:spectrum-passes-to-failure r)))
+    (is (= 1100.0 (:fatigue-life-cycles r)))))
+
+(deftest fatigue-mean-stress-goodman-correction-raises-effective-range
+  (let [curve {:basquin-b -0.1 :basquin-C 1.0e12}
+        base {:solver {:kind :fatigue}
+              :spectrum [{:stress-range-Pa 100e6 :cycles 100.0}]}
+        plain (cae/solve (merge curve base))
+        corrected (cae/solve (merge curve
+                                    (assoc-in base [:spectrum 0 :mean-stress-Pa] 100e6)
+                                    {:ultimate-strength-Pa 400e6}))]
+    (is (false? (:goodman-corrected? (first (:blocks plain)))))
+    (is (true? (:goodman-corrected? (first (:blocks corrected)))))
+    ;; sigma_a=50 MPa with sigma_m=100 MPa, su=400 MPa -> 50/(1-0.25)=66.67 MPa
+    ;; effective amplitude, i.e. 133.33 MPa effective range > 100 MPa nominal.
+    (is (= (* 2.0 (/ 50e6 (- 1.0 (/ 100e6 400e6))))
+           (:effective-stress-range-Pa (first (:blocks corrected)))))
+    (is (> (:damage-per-pass corrected) (:damage-per-pass plain)))))
+
+(deftest fatigue-rejects-unmeasured-curves-and-invalid-inputs
+  (let [base {:solver {:kind :fatigue}
+              :spectrum [{:stress-range-Pa 100e6 :cycles 100.0}] :basquin-b -0.1
+              :basquin-C 1.0e12}]
+    ;; No invented defaults: a missing SN curve is refused, not guessed.
+    (is (thrown-with-msg? Exception #"Basquin exponent" (cae/solve (dissoc base :basquin-b))))
+    (is (thrown-with-msg? Exception #"Basquin coefficient" (cae/solve (dissoc base :basquin-C))))
+    (is (thrown-with-msg? Exception #"non-empty :spectrum"
+                          (cae/solve (dissoc base :spectrum))))
+    (is (thrown-with-msg? Exception #"positive" (cae/solve (assoc-in base [:spectrum 0 :cycles] 0.0))))
+    ;; Goodman correction without ultimate strength is refused, not assumed.
+    (is (thrown-with-msg? Exception #"ultimate-strength-Pa"
+                          (cae/solve (assoc-in base [:spectrum 0 :mean-stress-Pa] 50e6))))
+    (is (thrown-with-msg? Exception #"below ultimate strength"
+                          (cae/solve (merge base {:ultimate-strength-Pa 400e6}
+                                          {:spectrum [{:stress-range-Pa 100e6 :cycles 1.0
+                                                       :mean-stress-Pa 400e6}]}))))))
+
 
 (deftest fem-reports-deformation-strength-modal-and-life-results
   (let [r (cae/solve {:solver {:kind :fem} :length-m 1.0 :area-m2 0.001

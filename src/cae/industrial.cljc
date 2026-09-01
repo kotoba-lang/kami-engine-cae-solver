@@ -494,8 +494,75 @@
               :equilibrium-pressure-Pa equilibrium-pressure-Pa
               :equilibrium-lnPP-ref ln-p
               :capacity-h2-mass-kg h2-mass-kg}))))
+(defn fatigue
+  "Miner's-rule cumulative-damage fatigue over a caller-supplied load spectrum.
+  Case keys: `:spectrum` — a non-empty sequence of blocks, each with
+  `:stress-range-Pa` and `:cycles`; an optional per-block `:mean-stress-Pa`
+  applies the caller-supplied Goodman mean-stress correction and requires
+  `:ultimate-strength-Pa` on the case. The SN curve is `:basquin-b` /
+  `:basquin-C` — BOTH must be supplied; this contract invents no material
+  constants, so an unmeasured curve stays unmeasured.
+  Returns per-block lives and damage fractions, total Miner damage for one
+  spectrum pass, and the number of spectrum passes to failure."
+  [{:keys [spectrum basquin-b basquin-C ultimate-strength-Pa] :as input}]
+  (when (or (not (sequential? spectrum)) (empty? spectrum))
+    (throw (ex-info "fatigue requires a non-empty :spectrum of load blocks"
+                    {:spectrum spectrum})))
+  (when-not (and (finite-number? basquin-b) (neg? (double basquin-b)))
+    (throw (ex-info "Basquin exponent :basquin-b must be supplied, finite and negative"
+                    {:field :basquin-b :value basquin-b})))
+  (when-not (and (finite-number? basquin-C) (pos? (double basquin-C)))
+    (throw (ex-info "Basquin coefficient :basquin-C must be supplied, finite and positive"
+                    {:field :basquin-C :value basquin-C})))
+  (let [block-results
+        (mapv (fn [{:keys [stress-range-Pa cycles mean-stress-Pa] :as block}]
+                (when-not (map? block)
+                  (throw (ex-info "spectrum block must be a map" {:block block})))
+                (positive! block [:stress-range-Pa :cycles])
+                (when (and (some? mean-stress-Pa) (nil? ultimate-strength-Pa))
+                  (throw (ex-info "Goodman mean-stress correction requires :ultimate-strength-Pa"
+                                  {:mean-stress-Pa mean-stress-Pa})))
+                (nonnegative! (cond-> block
+                                mean-stress-Pa (assoc :ultimate-strength-Pa
+                                                      ultimate-strength-Pa))
+                              (cond-> [:stress-range-Pa]
+                                mean-stress-Pa (conj :mean-stress-Pa)))
+                (let [amplitude (/ stress-range-Pa 2.0)
+                      goodman? (some? mean-stress-Pa)
+                      _ (when (and goodman?
+                                   (>= (double mean-stress-Pa)
+                                       (double ultimate-strength-Pa)))
+                          (throw (ex-info "mean stress must be below ultimate strength for the Goodman correction"
+                                          {:mean-stress-Pa mean-stress-Pa
+                                           :ultimate-strength-Pa ultimate-strength-Pa})))
+                      amplitude-eff (if goodman?
+                                      (/ amplitude
+                                         (- 1.0 (/ mean-stress-Pa ultimate-strength-Pa)))
+                                      amplitude)
+                      range-eff (* 2.0 amplitude-eff)
+                      life (Math/pow (/ range-eff basquin-C) (/ 1.0 basquin-b))
+                      damage (/ cycles life)]
+                  (assoc block
+                         :stress-range-Pa stress-range-Pa :cycles cycles
+                         :goodman-corrected? goodman?
+                         :effective-stress-range-Pa range-eff
+                         :life-cycles life :damage-fraction damage)))
+              spectrum)
+        damage (reduce + (map :damage-fraction block-results))]
+    (merge (screening-result input :fatigue :Basquin-Miner
+                             [:Basquin-SN-curve :Miner-linear-damage
+                              (if (some #(contains? % :mean-stress-Pa) spectrum)
+                                :Goodman-mean-stress-correction
+                                :no-mean-stress-correction)])
+           {:basquin-b basquin-b :basquin-C basquin-C
+            :ultimate-strength-Pa ultimate-strength-Pa
+            :blocks block-results
+            :damage-per-pass damage
+            :spectrum-passes-to-failure (if (pos? damage) (/ 1.0 damage) ##Inf)
+            :fatigue-life-cycles (reduce + (map :cycles spectrum))})))
 
 (defmethod cae/solve :cfd [case] (cfd case))
+(defmethod cae/solve :fatigue [case] (fatigue case))
 (defmethod cae/solve :fem [case] (fem case))
 (defmethod cae/solve :process [case] (process case))
 (defmethod cae/solve :materials [case] (materials case))
