@@ -1,7 +1,7 @@
 (ns run-calculix-contact-evidence
   "Run a real 3D NLGEOM contact case and emit convergence/force-balance evidence."
   (:require [cae.external-evidence :as evidence]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.time Instant]))

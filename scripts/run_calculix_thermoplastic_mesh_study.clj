@@ -2,7 +2,7 @@
   "Execute 2/4/8-layer coupled thermoplastic meshes and audit each response."
   (:require [cae.calculix-thermoplastic-mesh :as mesh]
             [cae.external-evidence :as evidence]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.time Instant]))

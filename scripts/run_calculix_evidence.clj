@@ -1,7 +1,7 @@
 (ns run-calculix-evidence
   "Run digest-pinned CalculiX and emit input/result/analytic evidence."
   (:require [cae.external-evidence :as evidence]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.time Instant]))

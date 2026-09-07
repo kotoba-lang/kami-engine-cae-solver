@@ -1,7 +1,7 @@
 (ns run-openfoam-sbse-mesh-evidence
   "Generate and verify the first body-fitted 3D NASA SBSE OpenFOAM volume mesh."
   (:require [cae.sbse-block-mesh :as mesh]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.security MessageDigest]

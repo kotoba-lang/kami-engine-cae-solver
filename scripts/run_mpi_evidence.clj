@@ -1,7 +1,7 @@
 (ns run-mpi-evidence
   "Execute two identical real OpenMPI runs and emit fail-closed rank evidence."
   (:require [cae.external-evidence :as evidence]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.time Instant]))
