@@ -1,7 +1,7 @@
 (ns run-openfoam-bump-rans-evidence
   "Execute the digest-pinned OpenFOAM NASA TMR 2D bump k-omega SST case."
   (:require [cae.openfoam-bump :as bump]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.security MessageDigest]

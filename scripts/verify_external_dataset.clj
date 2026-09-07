@@ -2,7 +2,7 @@
   "Download immutable external CAE evidence and verify every byte."
   (:require [cae.dataset :as dataset]
             [cae.sbse-geometry :as sbse]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.net URI]
            [java.net.http HttpClient HttpClient$Redirect HttpRequest HttpResponse$BodyHandlers]

@@ -2,7 +2,7 @@
   "Execute three tilted-contact meshes and separate global from local convergence."
   (:require [cae.calculix-contact-mesh :as mesh]
             [cae.external-evidence :as evidence]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.time Instant]))

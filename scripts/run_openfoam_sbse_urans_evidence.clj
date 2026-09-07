@@ -4,7 +4,7 @@
             [cae.sbse-grid-study :as grid-study]
             [cae.sbse-rans :as rans]
             [cae.sbse-urans :as urans]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.security MessageDigest]

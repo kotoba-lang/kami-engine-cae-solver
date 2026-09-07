@@ -1,7 +1,7 @@
 (ns run-calculix-thermoplastic-evidence
   "Execute the real CalculiX coupled thermoplastic reference case."
   (:require [cae.external-evidence :as evidence]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.time Instant]))

@@ -1,7 +1,7 @@
 (ns run-openfoam-evidence
   "Run a digest-pinned OpenFOAM tutorial and emit hash-complete EDN evidence."
   (:require [cae.external-evidence :as evidence]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.time Instant]))

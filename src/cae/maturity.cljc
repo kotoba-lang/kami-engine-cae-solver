@@ -1,6 +1,6 @@
 (ns cae.maturity
   "Repo-wide numerical maturity model and DataScript/Datomic transaction data."
-  #?(:clj (:require [clojure.edn :as edn]
+  #?(:clj (:require [kotoba.lang.edn :as edn]
                     [clojure.java.io :as io])))
 
 (def score-attributes

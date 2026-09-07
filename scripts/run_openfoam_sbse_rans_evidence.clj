@@ -3,7 +3,7 @@
   (:require [cae.sbse-block-mesh :as mesh]
             [cae.sbse-grid-study :as grid-study]
             [cae.sbse-rans :as rans]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.security MessageDigest]
