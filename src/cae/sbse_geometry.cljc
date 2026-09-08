@@ -1,6 +1,6 @@
 (ns cae.sbse-geometry
   "NASA/Boeing Smooth-Body Separation Experiment parametric surface."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def parameters
   {:L-m 0.9144 :x0-over-L 0.195 :z0-over-L 0.06 :h-over-L 0.085

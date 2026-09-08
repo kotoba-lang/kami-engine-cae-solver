@@ -1,6 +1,6 @@
 (ns cae.result-reader
   "Small, format-oriented readers for host solver result interchange."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn- number [s]
   #?(:clj (Double/parseDouble s) :cljs (js/parseFloat s)))

@@ -1,6 +1,6 @@
 (ns cae.calculix-contact-mesh
   "Generate paired structured C3D8 blocks for contact-pressure mesh studies."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn- nid [n offset layer i j]
   (+ offset 1 (* layer (inc n) (inc n)) (* i (inc n)) j))

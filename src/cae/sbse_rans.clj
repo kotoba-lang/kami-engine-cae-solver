@@ -1,6 +1,6 @@
 (ns cae.sbse-rans
   "Auditable OpenFOAM k-omega SST case generation for the NASA SBSE tunnel."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def default-experiment
   {:velocity-m-s 34.59 :pressure-pa 99000.0 :temperature-c 21.3

@@ -1,6 +1,6 @@
 (ns cae.external-evidence-test
   (:require [cae.external-evidence :as evidence]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is]]))
 
 (def log-sample

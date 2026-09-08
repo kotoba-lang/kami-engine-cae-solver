@@ -3,7 +3,7 @@
   (:require [cae.sbse-block-mesh :as mesh]
             [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str])
+            [kotoba.lang.text :as str])
   (:import [java.security MessageDigest]
            [java.time Instant]))
 

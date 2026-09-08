@@ -1,6 +1,6 @@
 (ns cae.calculix-thermoplastic-mesh
   "Generate consistently refined 1x1xN coupled thermoplastic C3D8 meshes."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn- node-id [layer corner] (+ 1 (* 4 layer) corner))
 (defn- csv [xs] (str/join ", " xs))

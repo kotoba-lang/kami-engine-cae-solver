@@ -1,7 +1,7 @@
 (ns cae.sbse-block-mesh
   "Body-fitted multi-block Hex mesh for the NASA SBSE ideal test section."
   (:require [cae.sbse-geometry :as sbse]
-            [clojure.string :as str]))
+            [kotoba.lang.text :as str]))
 
 (defn- join-lines [xs] (str/join "\n" xs))
 (defn- face [ids] (str "        (" (str/join " " ids) ")"))

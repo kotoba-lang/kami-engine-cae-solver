@@ -1,6 +1,6 @@
 (ns cae.calculix-mesh
   "Clean-room structured C3D8 CalculiX mesh/case generation for convergence studies."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn node-id [ny nz i j k]
   (inc (+ (* i (inc ny) (inc nz)) (* j (inc nz)) k)))
