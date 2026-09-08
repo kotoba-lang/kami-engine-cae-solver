@@ -1,6 +1,6 @@
 (ns cae.openfoam-bump
   "Static, auditable generation of the NASA TMR 2D bump spline for OpenFOAM."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn bump-height [x]
   (if (<= 0.3 x 1.2)

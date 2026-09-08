@@ -1,6 +1,6 @@
 (ns cae.case-writer
   "Clean-room writers for interoperable OpenFOAM and CalculiX case inputs."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn- lines [& xs] (str (str/join "\n" xs) "\n"))
 

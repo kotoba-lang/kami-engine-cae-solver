@@ -2,7 +2,7 @@
   "Fail-closed provenance and applicability checks for analysis material data.
 
   Passing these checks establishes traceability, not physical validation."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def ^:private sha256-pattern #"^[0-9a-f]{64}$")
 (def ^:private allowed-units

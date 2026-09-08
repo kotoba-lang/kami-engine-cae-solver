@@ -5,7 +5,7 @@
   USDA files. Format parsers remain the authority for their own standards;
   CAE needs a small, validated reference that makes a result reproducible and
   tells an orchestration host exactly which scene asset and prim were used."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def supported-sources #{:cad :bim :equipment :openusd})
 (def supported-up-axes #{:y-up :z-up})

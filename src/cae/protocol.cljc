@@ -1,6 +1,6 @@
 (ns cae.protocol
   "Clean-room, serializable protocols for MPI jobs, mesh exchange and coupling."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn mpi-message [{:keys [source target tag payload]}]
   {:source (long source) :target (long target) :tag (keyword tag) :payload payload :protocol :mpi-like-v1})

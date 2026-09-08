@@ -1,6 +1,6 @@
 (ns cae.dataset
   "License-aware, solver-neutral dataset manifests and sample normalization."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn manifest [{:keys [id revision license domain files source]}]
   {:dataset/id (str id) :revision revision :license license :domain (keyword domain) :files (vec files) :source source :status :unverified})
@@ -211,5 +211,5 @@
     {:dataset/id (:dataset/id sample) :field field :count (count values) :values (vec (map double values)) :units nil :status :unverified}))
 
 (defn file-kind [path]
-  (let [p (str/lower-case (str path))]
+  (let [p (str/lower (str path))]
     (cond (str/ends-with? p ".h5") :hdf5 (str/ends-with? p ".vtu") :vtu (str/ends-with? p ".vtk") :vtk (str/ends-with? p ".msh") :gmsh (str/ends-with? p ".inp") :calculix :else :unknown)))

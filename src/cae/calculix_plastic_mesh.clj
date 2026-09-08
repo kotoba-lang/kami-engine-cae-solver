@@ -1,6 +1,6 @@
 (ns cae.calculix-plastic-mesh
   "Generate C3D8 material-nonlinearity meshes with a controlled strain gradient."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (defn- nid [n layer i j] (inc (+ (* layer (inc n) (inc n)) (* i (inc n)) j)))
 (defn- csv [xs] (str/join ", " xs))
