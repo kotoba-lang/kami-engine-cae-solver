@@ -39,7 +39,7 @@ jobs:
           clojure -M:pages -m cljs.main -O simple -t browser \
             -d dist/cljs-out -o dist/kami-cae-webgpu.js -c cae.webgpu
       - name: Verify advanced 3D scene contract
-        run: node scripts/verify_advanced_scenes.mjs dist/index.html src/cae/webgpu.cljs
+        run: node scripts/verify_advanced_scenes.mjs dist/index.html src/cae/webgpu.cljk
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

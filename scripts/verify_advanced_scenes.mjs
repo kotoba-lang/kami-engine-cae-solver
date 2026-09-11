@@ -1,7 +1,7 @@
 import fs from "node:fs";
 
 const html = fs.readFileSync(process.argv[2] || "dist/index.html", "utf8");
-const cljs = fs.readFileSync(process.argv[3] || "src/cae/webgpu.cljs", "utf8");
+const cljs = fs.readFileSync(process.argv[3] || "src/cae/webgpu.cljk", "utf8");
 const css = fs.readFileSync(process.argv[4] || "dist/css/main.css", "utf8");
 const ids = [...html.matchAll(/data-kami-scene="(\d+)"/g)].map((m) => Number(m[1]));
 const expected = Array.from({length: 15}, (_, i) => i);

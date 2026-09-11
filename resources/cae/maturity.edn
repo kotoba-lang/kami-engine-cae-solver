@@ -35,11 +35,11 @@
   {:id :cae/electromagnetics :repo "kotoba-lang/kami-engine-cae-solver" :domain :electromagnetics
    :scores {:implementation 2 :numerical-verification 2 :experimental-validation 0
             :software-quality 3 :integration 3}
-   :evidence ["src/cae/high_fidelity.cljc"]}
+   :evidence ["src/cae/high_fidelity.cljk"]}
   {:id :cae/production :repo "kotoba-lang/kami-engine-cae-solver" :domain :production-simulation
    :scores {:implementation 2 :numerical-verification 2 :experimental-validation 0
             :software-quality 3 :integration 3}
-   :evidence ["src/cae/high_fidelity.cljc"]}
+   :evidence ["src/cae/high_fidelity.cljk"]}
   {:id :physics/contract :repo "kotoba-lang/physics" :domain :shared-contract
    :scores {:implementation 4 :numerical-verification 3 :experimental-validation 0
             :software-quality 4 :integration 4}
