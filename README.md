@@ -68,7 +68,7 @@ the study remains valid when a host replaces a screening model with a dedicated
 CAE adapter.
 
 Part of the clean-sheet vehicle-design / CAE stack (purpose-split shared libs).
-Zero-dep portable `.cljc`. Run `clojure -M:test`.
+Zero-dep portable `.cljc`. Run `kbb -M:test`.
 
 ## CLJS / Node smoke test
 
@@ -76,7 +76,7 @@ The same source executes under ClojureScript through NBB (no JVM solver
 fallback). With [NBB](https://github.com/babashka/nbb) installed, run:
 
 ```sh
-nbb -cp src:test -e "(require '[cae.cljs-smoke-test])"
+kbb --backend sci -cp src:test -e "(require '[cae.cljs-smoke-test])"
 ```
 
 It executes CFD (fittings + combustion), FEM beam, Arrhenius materials,
@@ -117,7 +117,7 @@ verification, experimental validation, software quality and integration on a
 0--5 score and percentage.  The current evidence-backed aggregate is
 `2.40/5.00` (`48.0%`); this is not an industrial-readiness claim.
 
-Run `clojure -M:dataset -m report-maturity` to emit the full numeric EDN report.
+Run `kbb -M:dataset -m report-maturity` to emit the full numeric EDN report.
 `cae.maturity/tx-data` emits portable entity maps accepted by DataScript and
 Datomic.  The committed schemas are `cae/maturity-datascript-schema.edn` and
 `cae/maturity-datomic-schema.edn`; `all-components-query` and
@@ -189,7 +189,7 @@ iterative residual.
 `resources/cae/datasets.edn` pins Hugging Face repositories to immutable
 40-character revisions and records license, origin, intended use, commercial
 permission, validation independence, citation, split, byte size and SHA-256.
-`clojure -M:dataset -m verify-external-dataset aethron-cfd-pinn` downloads only the
+`kbb -M:dataset -m verify-external-dataset aethron-cfd-pinn` downloads only the
 manifested files and rejects any size/hash drift. CI executes this byte-level
 check on JDK 21.
 
@@ -204,7 +204,7 @@ in CI, but remains training-only synthetic data.
 
 The registry also content-pins the NIST MIDAS experimental compression data
 for annealed AISI 1045 steel. Run
-`clojure -M:dataset -m verify-external-dataset nist-midas-1045-dynamic-plasticity`
+`kbb -M:dataset -m verify-external-dataset nist-midas-1045-dynamic-plasticity`
 to download the NIST CSV over HTTPS, reject byte/hash drift, parse its experiment
 blocks, and reproduce paired published-model residual statistics. The source
 does not publish per-sample measurement uncertainty, so the resulting report is
@@ -236,7 +236,7 @@ surface records. `cae.sbse-geometry` independently implements the published
 triangulated STL. This establishes geometry provenance; it does not yet prove
 an as-built CMM match, volume-mesh quality or RANS accuracy.
 
-`clojure -M:dataset -m run-openfoam-sbse-mesh-evidence` generates a body-fitted
+`kbb -M:dataset -m run-openfoam-sbse-mesh-evidence` generates a body-fitted
 3D structured-Hex test-section mesh directly from that parametric surface. The
 first accepted grid contains 27,648 cells and passes full OpenFOAM topology and
 geometry checks with one region, positive volume, 34.21-degree maximum
@@ -244,7 +244,7 @@ non-orthogonality and 0.4456 maximum skewness. Every generated dictionary and
 `polyMesh` file is hashed. This is the coarse RANS grid; y+ suitability, grid
 convergence and experimental correlation remain separate required gates.
 
-`clojure -M:dataset -m run-openfoam-sbse-rans-evidence` now generates and
+`kbb -M:dataset -m run-openfoam-sbse-rans-evidence` now generates and
 executes a real 3D OpenFOAM v2506 k-omega SST case on that grid. The inlet uses
 the Mach 0.1 OFI header values (`Uinf=34.59 m/s`, `P=99 kPa`, `T=21.3 C`,
 `RH=81%`); moist-air density, Sutherland viscosity, Reynolds number, `k` and
@@ -271,7 +271,7 @@ and a potential-flow initializer. The first steady coarse attempt remained
 above the declared residual limits, so no grid-convergence or validation claim
 is made; transient URANS time averaging is the next required solve path.
 
-`clojure -M:dataset -m run-openfoam-sbse-urans-evidence` implements that path
+`kbb -M:dataset -m run-openfoam-sbse-urans-evidence` implements that path
 with adaptive PIMPLE, Euler time integration, strict final pressure correction,
 low-Re SST, `fieldAverage`, area-averaged wall-shear time series and optional
 OpenMPI decomposition. A short 0.002 s coarse-grid pilot completes 200 stable
@@ -303,7 +303,7 @@ execution testing, but cannot obtain temporal-coverage or stationarity
 qualification from that waiver.
 
 As a reproducible RANS baseline,
-`clojure -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
+`kbb -M:dataset -m run-openfoam-bump-rans-evidence` executes the official
 NASA TMR 2D bump verification case with OpenFOAM v2506 and k-omega SST. Kotoba
 statically expands the NASA analytic bump into 100 spline points, eliminating
 the tutorial's runtime C++ `codeStream`. The 13,770-cell solve converges in
@@ -315,7 +315,7 @@ an experimental validation claim.
 ## Real external solver execution
 
 `resources/cae/external-solvers.edn` pins OpenFOAM v2506 to an ARM64 OCI image
-digest. `clojure -M:dataset -m run-openfoam-evidence` copies the image's own
+digest. `kbb -M:dataset -m run-openfoam-evidence` copies the image's own
 `icoFoam/cavity` tutorial, hashes every input dictionary, executes the real
 `blockMesh` and `icoFoam` binaries, parses residual/Courant/continuity records,
 hashes the logs and final fields, verifies the local image digest, and emits an
@@ -331,7 +331,7 @@ excludes an accuracy or design-signoff claim.
 The same evidence path now executes CalculiX 2.21 from a locally built ARM64
 container whose Ubuntu base digest and `calculix-ccx=2.21-1` package version are
 fixed in `containers/calculix/Dockerfile`. Run
-`clojure -M:dataset -m run-calculix-evidence` to solve the committed C3D8 unit
+`kbb -M:dataset -m run-calculix-evidence` to solve the committed C3D8 unit
 cube, hash its INP/log/FRD/STA/CVG files, parse the actual FRD displacement
 field, and compare maximum axial displacement with the closed-form 0.001 m
 answer. The committed run has eight nodal samples and zero relative error for
@@ -339,7 +339,7 @@ that quantity. This narrowly verifies linear, small-strain axial response; it
 does not qualify nonlinear contact, plasticity, large deformation, fracture,
 or arbitrary industrial models.
 
-`clojure -M:dataset -m run-mpi-evidence` verifies a real four-rank OpenMPI
+`kbb -M:dataset -m run-mpi-evidence` verifies a real four-rank OpenMPI
 4.1.6 runtime in a digest-pinned ARM64 container. The clean-room Kotoba worker
 distributes one million midpoint-integration samples, performs real
 `MPI_Allreduce` and `MPI_Gather` collectives, and emits one audit record per
@@ -350,7 +350,7 @@ absolute error of about `1.10e-13`. This proves single-container multi-process
 execution only; multi-node networking, scaling efficiency, failure recovery,
 and production CFD/FEM decomposition remain outside the qualified scope.
 
-`clojure -M:dataset -m run-calculix-contact-evidence` executes a separate 3D
+`kbb -M:dataset -m run-calculix-contact-evidence` executes a separate 3D
 geometrically nonlinear contact case. Two C3D8 blocks start with a gap; a
 prescribed `-0.2` displacement closes it and compresses the pair using
 surface-to-surface penalty contact. The evidence parser requires every one of
@@ -362,7 +362,7 @@ relative balance error of zero. This verifies this frictionless elastic block
 case only; it does not validate friction, plasticity, self-contact, impact,
 mesh convergence, or general production assemblies.
 
-`clojure -M:dataset -m run-calculix-plastic-evidence` executes a material-
+`kbb -M:dataset -m run-calculix-plastic-evidence` executes a material-
 nonlinear C3D8 load/unload cycle with bilinear isotropic hardening. The
 piecewise amplitude rises beyond yield and returns to zero; the parser joins 42
 DAT history snapshots and requires every increment to converge, positive PEEQ
@@ -373,7 +373,7 @@ is a constrained uniaxial-strain material verification, not calibration for a
 specific production alloy; cyclic hardening, anisotropy, damage, rate and
 temperature dependence still require independent material data and validation.
 
-`clojure -M:dataset -m run-calculix-mesh-study` generates and executes four
+`kbb -M:dataset -m run-calculix-mesh-study` generates and executes four
 consistently refined C3D8 meshes for a 3D NLGEOM cantilever: 10, 80, 640 and
 5,120 elements. It hashes every generated INP and solver output, requires all
 real runs to complete, and evaluates rolling three-grid Richardson/GCI studies.
@@ -383,7 +383,7 @@ GCI falls from `6.709%` to `1.2839%`, a `5.225x` reduction that passes the
 declared 3% study target. This target applies only to this response and case;
 it is not a universal mesh-independent or industrial-accuracy claim.
 
-`clojure -M:dataset -m run-calculix-contact-mesh-study` executes three tilted
+`kbb -M:dataset -m run-calculix-contact-mesh-study` executes three tilted
 surface-to-surface contact meshes and deliberately separates global equilibrium
 from local pressure qualification. All runs balance top reaction and integrated
 contact force to the printed precision, but maximum CSTR is `1850.36`,
@@ -392,7 +392,7 @@ GCI are undefined. The evidence run passes as a sensitivity audit while the
 local-pressure scope fails closed as `:local-pressure-not-qualified`. A correct
 total force must never be used to claim a converged local contact maximum.
 
-`clojure -M:dataset -m run-calculix-plastic-mesh-study` applies a controlled
+`kbb -M:dataset -m run-calculix-plastic-mesh-study` applies a controlled
 strain gradient to three bilinear-isotropic-hardening C3D8 meshes and parses
 every final PEEQ integration-point value. Maximum PEEQ increases monotonically
 from `0.0017421` through `0.0018330` to `0.0018788`; the observed order is
@@ -401,7 +401,7 @@ qualifies maximum PEEQ only for this smooth gradient case. It does not cover
 notches, singularities, damage, fracture, another geometry, or an uncalibrated
 production material.
 
-`clojure -M:dataset -m run-calculix-thermoplastic-evidence` executes a real
+`kbb -M:dataset -m run-calculix-thermoplastic-evidence` executes a real
 CalculiX 2.21 3D coupled temperature-displacement step with temperature-dependent
 elastic/plastic tables, thermal expansion and conduction. The pinned run solves
 an interior temperature between 293.15 K and 773.15 K, activates nonzero heat
@@ -410,7 +410,7 @@ the coupled kernels for this two-element reference case only; mesh convergence,
 transient accuracy, experimental correlation and production material validity
 remain excluded.
 
-`clojure -M:dataset -m run-calculix-thermoplastic-mesh-study` repeats the
+`kbb -M:dataset -m run-calculix-thermoplastic-mesh-study` repeats the
 coupled case with 2, 4 and 8 through-thickness elements. All three real runs
 converge, but the midpoint temperature is `321.0526`, `289.1376`, then
 `292.6594` K; maximum heat flux is `35.90498`, `61.0368`, then `86.0267`; and

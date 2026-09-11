@@ -2,7 +2,7 @@
   "NBB/Node execution smoke test for the portable `.cljc` CAE surface.
 
   Run with:
-    nbb -cp src:test -e \"(require '[cae.cljs-smoke-test])\""
+    kbb --backend sci -cp src:test -e \"(require '[cae.cljs-smoke-test])\""
   (:require [cae.assessment :as assessment]
             [cae.industrial]
             [cae.interchange :as interchange]
