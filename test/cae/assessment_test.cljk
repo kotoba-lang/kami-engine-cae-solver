@@ -1,5 +1,5 @@
 (ns cae.assessment-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [cae.assessment :as assessment]
             [cae.industrial]
             [cae.solver :as solver]))

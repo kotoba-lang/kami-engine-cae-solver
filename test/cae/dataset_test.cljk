@@ -2,7 +2,7 @@
   (:require [cae.dataset :as dataset]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.test :refer [deftest is testing]]))
+            [kotoba.test :refer [deftest is testing]]))
 
 (def catalog (-> "cae/datasets.edn" io/resource slurp edn/read-string))
 (def quarantine (-> "cae/dataset-quarantine.edn" io/resource slurp edn/read-string))

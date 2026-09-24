@@ -1,6 +1,6 @@
 (ns cae.openfoam-bump-test
   (:require [cae.openfoam-bump :as bump]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest nasa-bump-profile-and-static-edge-generation
   (is (< (abs (- 0.05 (bump/bump-height 0.75))) 1.0e-14))

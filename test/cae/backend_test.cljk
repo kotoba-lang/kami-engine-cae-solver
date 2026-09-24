@@ -1,7 +1,7 @@
 (ns cae.backend-test
   (:require [cae.backend :as backend]
             [cae.solver :as cae]
-            [clojure.test :refer [deftest is]]
+            [kotoba.test :refer [deftest is]]
             [kotoba.physics.contract :as contract]))
 
 (defmethod cae/solve :contract-test [_]

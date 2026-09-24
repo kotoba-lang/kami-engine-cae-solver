@@ -1,6 +1,6 @@
 (ns cae.sbse-rans-test
   (:require [cae.sbse-rans :as rans]
-            [clojure.test :refer [deftest is testing]]))
+            [kotoba.test :refer [deftest is testing]]))
 
 (deftest experiment-condition-derivation
   (let [c (rans/flow-conditions rans/default-experiment)]

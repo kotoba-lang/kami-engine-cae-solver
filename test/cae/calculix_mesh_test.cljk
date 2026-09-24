@@ -1,6 +1,6 @@
 (ns cae.calculix-mesh-test
   (:require [cae.calculix-mesh :as mesh]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest structured-c3d8-has-conforming-counts-and-boundaries
   (let [case (mesh/cantilever-input {:nx 4 :ny 2 :nz 2})]

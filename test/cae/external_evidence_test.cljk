@@ -1,7 +1,7 @@
 (ns cae.external-evidence-test
   (:require [cae.external-evidence :as evidence]
             [kotoba.lang.text :as str]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (def log-sample
   "Time = 0.5\nCourant Number mean: 0.22 max: 0.85\nsmoothSolver:  Solving for Ux, Initial residual = 2.3e-07, Final residual = 2.3e-07, No Iterations 0\ntime step continuity errors : sum local = 8.8e-09, global = -1.4e-19, cumulative = -4.1e-18\nEnd\n")
