@@ -6,8 +6,8 @@
             [cae.verification]
             [cae.vv]
             [cae.solver :as solver]
-            [clojure.data.json :as json]
-            [clojure.java.io :as io]
+            [kotoba.json :as json]
+            [kotoba.io :as io]
             [hiccup2.core :as h]
             [shadow.css :refer [css]]
             [shadow.css.build :as css-build]))
@@ -164,7 +164,7 @@
         report {:runtime "ClojureScript / WebGPU" :solver-fidelity :realtime-reference
                 :status :screening-only :qualification qualification :metrics rows}
         report-json (json/write-str report)]
-    (.mkdirs (io/file "dist"))
+    (io/mkdirs (io/file "dist"))
     (write-css!)
     (spit "dist/index.html"
           (str "<!doctype html>"
