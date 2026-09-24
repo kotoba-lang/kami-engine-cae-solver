@@ -1,6 +1,6 @@
 (ns cae.calculix-plastic-mesh-test
   (:require [cae.calculix-plastic-mesh :as plastic]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest gradient-plastic-mesh-has-controlled-resolution-and-loading
   (let [case (plastic/gradient-plastic-input {:divisions 4})]

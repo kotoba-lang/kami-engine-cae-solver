@@ -1,5 +1,5 @@
 (ns cae.industrial-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [cae.industrial]
             [cae.solver :as cae]))
 

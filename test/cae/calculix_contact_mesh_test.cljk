@@ -1,6 +1,6 @@
 (ns cae.calculix-contact-mesh-test
   (:require [cae.calculix-contact-mesh :as contact]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest contact-mesh-counts-and-nonuniform-loading
   (let [case (contact/contact-blocks-input {:divisions 4})]

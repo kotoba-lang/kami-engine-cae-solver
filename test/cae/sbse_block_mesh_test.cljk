@@ -1,6 +1,6 @@
 (ns cae.sbse-block-mesh-test
   (:require [cae.sbse-block-mesh :as mesh]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest structured-volume-mesh-has-consistent-counts-and-patches
   (let [generated (mesh/block-mesh-dict {:nx 4 :ny 5 :nz 2})

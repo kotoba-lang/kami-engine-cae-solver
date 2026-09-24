@@ -1,5 +1,5 @@
 (ns cae.h2-line-drop-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [cae.h2-line-drop]
             [cae.solver :as cae]))
 

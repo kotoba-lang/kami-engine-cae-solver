@@ -1,7 +1,7 @@
 (ns cae.sbse-urans-test
   (:require [cae.sbse-rans :as rans]
             [cae.sbse-urans :as urans]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest urans-case-has-adaptive-pimple-and-averaging
   (let [{:keys [files]} (urans/case-files rans/default-experiment)

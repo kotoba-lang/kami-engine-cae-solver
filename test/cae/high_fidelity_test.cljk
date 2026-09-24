@@ -1,5 +1,5 @@
 (ns cae.high-fidelity-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [cae.solver :as s]
             [cae.high-fidelity]
             [cae.verification]))

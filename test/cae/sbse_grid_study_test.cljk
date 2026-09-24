@@ -1,6 +1,6 @@
 (ns cae.sbse-grid-study-test
   (:require [cae.sbse-grid-study :as study]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest wall-resolved-family-refines-all-directions
   (let [[coarse medium fine] (study/family)]

@@ -1,5 +1,5 @@
 (ns cae.orchestration-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [cae.industrial]
             [cae.orchestration :as orchestration]))
 

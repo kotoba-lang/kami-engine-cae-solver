@@ -1,6 +1,6 @@
 (ns cae.thermoplastic-evidence-test
   (:require [cae.external-evidence :as evidence]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (def log-text (str "Nonlinear material laws are taken into account\n"
                    "Nonlinear geometric effects are taken into account\n"

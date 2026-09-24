@@ -4,3 +4,4 @@
 .lsp/
 .DS_Store
 dist/
+.nbb/

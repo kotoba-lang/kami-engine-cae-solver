@@ -1,6 +1,6 @@
 (ns cae.sbse-geometry-test
   (:require [cae.sbse-geometry :as sbse]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest nasa-parametric-bump-has-declared-scale-and-symmetry
   (let [h (* 0.9144 0.085)]

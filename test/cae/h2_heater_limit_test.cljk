@@ -1,5 +1,5 @@
 (ns cae.h2-heater-limit-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [cae.h2-heater-limit]
             [cae.solver :as cae]))
 

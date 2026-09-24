@@ -1,5 +1,5 @@
 (ns cae.h2-tank-storage-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [cae.h2-tank-storage]
             [cae.solver :as cae]))
 

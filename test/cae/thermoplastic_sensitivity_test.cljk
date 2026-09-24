@@ -1,6 +1,6 @@
 (ns cae.thermoplastic-sensitivity-test
   (:require [cae.external-evidence :as evidence]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (deftest independent-response-gates-do-not-hide-local-nonconvergence
   (let [levels [{:id :coarse :h-relative 4.0 :passed? true
