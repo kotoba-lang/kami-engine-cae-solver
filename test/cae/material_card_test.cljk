@@ -1,5 +1,5 @@
 (ns cae.material-card-test
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [cae.material-card :as material]))

@@ -1,6 +1,6 @@
 (ns cae.dataset-test
   (:require [cae.dataset :as dataset]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [kotoba.test :refer [deftest is testing]]))
 
