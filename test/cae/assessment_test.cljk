@@ -1,5 +1,5 @@
 (ns cae.assessment-test
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is testing]]
             [cae.assessment :as assessment]
             [cae.industrial]
             [cae.solver :as solver]))
@@ -26,11 +26,11 @@
 
 (deftest invalid-acceptance-configuration-is-rejected-before-assessment
   (testing "bad configuration is distinct from an engineering failure"
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"must be finite"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"must be finite"
                           (assessment/assess {} {:stress-Pa {:max ##NaN}})))
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"cannot exceed"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"cannot exceed"
                           (assessment/assess {} {:stress-Pa {:min 10 :max 1}})))
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"must be a keyword"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"must be a keyword"
                           (assessment/assess {} {"stress-Pa" {:max 1}})))))
 
 (deftest an-assessment-can-be-attached-to-a-result

@@ -121,10 +121,10 @@
 (deftest manufactured-solution-refuses-what-it-cannot-read-an-order-from
   (testing "meshes that are not successive halvings"
     (is (thrown-with-msg?
-         #?(:clj clojure.lang.ExceptionInfo :cljs js/Error) #"twice the previous"
+         js/Error #"twice the previous"
          (solver/solve {:solver {:kind :manufactured-solution} :element-counts [8 12]}))))
   (testing "a single mesh, from which no order can be read at all"
-    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+    (is (thrown? js/Error
                  (solver/solve {:solver {:kind :manufactured-solution} :element-counts [16]}))))
   (testing "an unknown family, named against the ones that exist"
     (let [d (try (solver/solve {:solver {:kind :manufactured-solution} :family :no-such})

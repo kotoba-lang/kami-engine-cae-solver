@@ -1,5 +1,5 @@
 (ns cae.interchange-test
-  (:require [kotoba.test :refer [deftest is]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is]]
             [cae.industrial]
             [cae.interchange :as interchange]
             [cae.solver :as solver]))
@@ -25,7 +25,7 @@
 (deftest provenance-rejects-ambiguous-or-invalid-references
   (letfn [(error-data [provenance]
             (try (interchange/validate-provenance provenance) nil
-                 (catch clojure.lang.ExceptionInfo error (ex-data error))))]
+                 (catch kerror/ExceptionInfo error (ex-data error))))]
     (is (= :source (:field (error-data {:source :mesh :asset-uri "file:///a"}))))
     (is (= :asset-uri (:field (error-data {:source :cad :asset-uri "  "}))))
     (is (= :prim-path (:field (error-data {:source :openusd :asset-uri "file:///a.usda"}))))

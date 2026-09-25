@@ -1,5 +1,5 @@
 (ns cae.industrial-test
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is testing]]
             [cae.industrial]
             [cae.solver :as cae]))
 
@@ -205,7 +205,7 @@
 
 (deftest invalid-or-inconsistent-cases-fail-with-actionable-data
   (letfn [(failure [f]
-            (try (f) nil (catch clojure.lang.ExceptionInfo e (ex-data e))))]
+            (try (f) nil (catch kerror/ExceptionInfo e (ex-data e))))]
     (is (= :flow-m3-s
            (:field (failure #(cae/solve {:solver {:kind :cfd} :flow-m3-s ##NaN
                                           :duct-diameter-m 0.4 :duct-length-m 10.0})))))

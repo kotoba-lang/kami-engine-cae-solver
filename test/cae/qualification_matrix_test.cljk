@@ -1,6 +1,6 @@
 (ns cae.qualification-matrix-test
   (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.test :refer [deftest is]]))
 
 (def matrix (-> "cae/qualification-matrix.edn" io/resource slurp edn/read-string))

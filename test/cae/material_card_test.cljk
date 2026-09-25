@@ -1,6 +1,6 @@
 (ns cae.material-card-test
-  (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+  (:require [kotoba.lang.error :as kerror] [kotoba.lang.edn :as edn]
+            [kotoba.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [cae.material-card :as material]))
 
@@ -8,7 +8,7 @@
 
 (defn reasons [c]
   (try (material/audit c) nil
-       (catch clojure.lang.ExceptionInfo e (:reasons (ex-data e)))))
+       (catch kerror/ExceptionInfo e (:reasons (ex-data e)))))
 
 (deftest traceable-material-card-is-audited-and-attached
   (is (= :metadata-audited (:status (material/audit card))))

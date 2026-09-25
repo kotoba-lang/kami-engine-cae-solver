@@ -1,5 +1,5 @@
 (ns cae.study-test
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is testing]]
             [cae.industrial]
             [cae.study :as study]))
 
@@ -25,14 +25,14 @@
 
 (deftest studies-reject-invalid-configuration-instead-of-silently-changing-it
   (testing "sweep configuration"
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"non-empty vector"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"non-empty vector"
                           (study/parameter-sweep duct-case [:flow-m3-s "bad"] [1.0])))
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"cannot be empty"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"cannot be empty"
                           (study/parameter-sweep duct-case [:flow-m3-s] []))))
   (testing "sensitivity configuration"
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"positive"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"positive"
                           (study/central-sensitivity duct-case [:flow-m3-s] :pressure-drop-Pa 0.0)))
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"finite"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"finite"
                           (study/central-sensitivity duct-case [:unknown] :pressure-drop-Pa 0.1)))
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"finite result metric"
+    (is (thrown-with-msg? kerror/ExceptionInfo #"finite result metric"
                           (study/central-sensitivity duct-case [:flow-m3-s] :unknown 0.1)))))

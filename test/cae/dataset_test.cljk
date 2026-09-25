@@ -1,7 +1,7 @@
 (ns cae.dataset-test
   (:require [cae.dataset :as dataset]
             [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.test :refer [deftest is testing]]))
 
 (def catalog (-> "cae/datasets.edn" io/resource slurp edn/read-string))

@@ -1,5 +1,5 @@
 (ns cae.orchestration-test
-  (:require [kotoba.test :refer [deftest is testing]]
+  (:require [kotoba.lang.error :as kerror] [kotoba.test :refer [deftest is testing]]
             [cae.industrial]
             [cae.orchestration :as orchestration]))
 
@@ -33,5 +33,5 @@
                                               :temperature-K 900 :time-s 60}])]
       (is (= [:failed :succeeded] (mapv :status batch)))
       (is (= 1 (:succeeded (orchestration/summary batch))))))
-  (is (thrown-with-msg? clojure.lang.ExceptionInfo #"sequential"
+  (is (thrown-with-msg? kerror/ExceptionInfo #"sequential"
                         (orchestration/run-cases {:solver {:kind :cfd}}))))
