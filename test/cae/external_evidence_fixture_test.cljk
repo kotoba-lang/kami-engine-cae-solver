@@ -1,6 +1,6 @@
 (ns cae.external-evidence-fixture-test
   (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.test :refer [deftest is]]))
 
 (defn fixture [path] (-> path io/resource slurp edn/read-string))

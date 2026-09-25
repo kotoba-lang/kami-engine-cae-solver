@@ -1,7 +1,7 @@
 (ns cae.maturity-test
   (:require [cae.maturity :as maturity]
             [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [datascript.core :as d]))
 
